@@ -1,0 +1,2 @@
+kube_prod_dc2
+kube_pcidss-prod.dc2

@@ -1,0 +1,22 @@
+# Custom rules for log parsing exceptions
+rules:
+  metrics_paths:
+    - "/metrics"
+    - "/alive"
+    - "/ready"
+    - "/health"
+    - "/ok.php"
+    - "/monitoring"
+
+  # IP addresses
+  ip_addresses:
+    xinflbpub:
+      - "172.17.2.5"
+      - "172.18.2.5"
+    kube_workers:
+      - "10.121.232"
+    xpayhdws:
+      - "10.120.100.186"
+      - "10.120.1.54"
+      - "10.120.1.155"
+      - "10.120.101.224"

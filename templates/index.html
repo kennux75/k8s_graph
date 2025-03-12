@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kubernetes Communications Graph</title>
+    <link rel="stylesheet" href="https://unpkg.com/vis-network/dist/dist/vis-network.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .debug {
+            display: none;
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        
+        .show-debug .debug {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <div class="control-panel">
+            <h1>K8s Communications Graph</h1>
+
+            <div class="panel-section">
+                <h3>
+                    <span>Status</span>
+                    <button class="collapse-btn">
+                        <i class="fas fa-chevron-up"></i>
+                    </button>
+                </h3>
+                <div class="panel-content">
+                    <div id="status" class="status">Initializing...</div>
+                    <div id="last-update" class="status">Last update: Never</div>
+                    <div id="countdown-timer" class="status">Next update in: 60 seconds</div>
+                    <!-- <button id="toggle-debug-btn" class="action-button" style="margin-top: 10px;">
+                        <i class="fas fa-bug"></i> Toggle Debug Info
+                    </button>
+                    <div id="debug" class="debug"></div> -->
+                </div>
+            </div> 
+            <div class="panel-section">
+                <h3>
+                    <span>Controls</span>
+                    <button class="collapse-btn">
+                        <i class="fas fa-chevron-up"></i>
+                    </button>
+                </h3>
+                <div class="panel-content">
+                    <button id="refresh-btn" class="action-button">
+                        <i class="fas fa-sync-alt"></i> Refresh Graph
+                    </button>
+                    <button id="toggle-physics-btn" class="action-button">
+                        <i class="fas fa-atom"></i> <span id="physics-btn-text">Enable Physics</span>
+                    </button>
+                    <button id="stabilize-btn" class="action-button">
+                        <i class="fas fa-balance-scale"></i> Stabilize
+                    </button>
+                    <button id="toggle-fixed-positions-btn" class="action-button">
+                        <i class="fas fa-thumbtack"></i> Toggle Fixed Positions
+                    </button>
+                    <button id="toggle-animation-btn" class="action-button">
+                        <i class="fas fa-running"></i> Toggle Ant Mode
+                    </button>
+                    <button id="reset-view-btn" class="action-button">
+                        <i class="fas fa-home"></i> Reset View
+                    </button>
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <h3>
+                    <span>Update Interval</span>
+                    <button class="collapse-btn">
+                        <i class="fas fa-chevron-up"></i>
+                    </button>
+                </h3>
+                <div class="panel-content">
+                    <div class="interval-control">
+                        <input type="number" id="update-interval" min="{{ config.minInterval }}" value="{{ config.updateInterval }}" class="interval-input">
+                        <span>seconds</span>
+                        <button id="set-interval-btn" class="action-button">
+                            <i class="fas fa-clock"></i> Set
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <h3>
+                    <span>Filter by Node</span>
+                    <button class="collapse-btn">
+                        <i class="fas fa-chevron-up"></i>
+                    </button>
+                </h3>
+                <div class="panel-content">
+                    <div class="search-container">
+                        <input type="text" id="node-search" placeholder="Search nodes..." class="search-input">
+                        <button id="clear-search-btn" class="action-button">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div id="node-filters" class="filter-list">
+                        <!-- Node filters will be added here dynamically -->
+                        <div class="loading">Loading nodes...</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <h3>
+                    <span>Filter by Edge Status</span>
+                    <button class="collapse-btn">
+                        <i class="fas fa-chevron-up"></i>
+                    </button>
+                </h3>
+                <div class="panel-content">
+                    <div id="edge-filters" class="filter-list">
+                        <div class="edge-filter">
+                            <input type="checkbox" id="edge-filter-no-errors" class="edge-checkbox" data-edge-status="no-errors" checked>
+                            <span class="color-box" style="background-color: #848484;"></span>
+                            <label for="edge-filter-no-errors" class="edge-label">No errors</label>
+                        </div>
+                        <div class="edge-filter">
+                            <input type="checkbox" id="edge-filter-4xx" class="edge-checkbox" data-edge-status="4xx" checked>
+                            <span class="color-box" style="background-color: #f39c12;"></span>
+                            <label for="edge-filter-4xx" class="edge-label">4xx errors</label>
+                        </div>
+                        <div class="edge-filter">
+                            <input type="checkbox" id="edge-filter-5xx" class="edge-checkbox" data-edge-status="5xx" checked>
+                            <span class="color-box" style="background-color: #e74c3c;"></span>
+                            <label for="edge-filter-5xx" class="edge-label">5xx errors</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <h3>
+                    <span>Physics Settings</span>
+                    <button class="collapse-btn">
+                        <i class="fas fa-chevron-up"></i>
+                    </button>
+                </h3>
+                <div class="panel-content">
+                    <button id="apply-physics-btn" class="action-button">
+                        <i class="fas fa-check"></i> Apply Physics
+                    </button>
+                </div>
+            </div>
+            
+            <div class="panel-footer">
+                <small>K8s Communications Graph Visualizer v1.0</small>
+            </div>
+        </div>
+        
+        <div class="graph-container">
+            <div id="network"></div>
+        </div>
+    </div>
+    
+    <!-- JavaScript Libraries -->
+    <script src="https://unpkg.com/vis-data@7.1.4/peer/umd/vis-data.min.js"></script>
+    <script src="https://unpkg.com/vis-network@9.1.2/peer/umd/vis-network.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.1/socket.io.min.js"></script>
+    <script>
+        // Add debug console functionality
+        // const debugDiv = document.getElementById('debug');
+        // const toggleDebugBtn = document.getElementById('toggle-debug-btn');
+        
+        // Override console.log to also display in debug div
+        const originalConsoleLog = console.log;
+        console.log = function() {
+            // Call original console.log
+            originalConsoleLog.apply(console, arguments);
+            
+            // Add to debug div
+            const args = Array.from(arguments);
+            const message = args.map(arg => {
+                if (typeof arg === 'object') {
+                    try {
+                        return JSON.stringify(arg, null, 2);
+                    } catch (e) {
+                        return String(arg);
+                    }
+                }
+                return String(arg);
+            }).join(' ');
+            
+            const logLine = document.createElement('div');
+            logLine.textContent = `${new Date().toLocaleTimeString()}: ${message}`;
+            //debugDiv.appendChild(logLine);
+            //debugDiv.scrollTop = debugDiv.scrollHeight;
+        };
+    </script>
+    <script type="application/json" id="server-config">
+        {
+            "updateInterval": {{ config.updateInterval }},
+            "minInterval": {{ config.minInterval }},
+            "physics": {
+                "enabled": {% if config.physics.enabled %}true{% else %}false{% endif %},
+                "gravity": {{ config.physics.gravity }},
+                "springLength": {{ config.physics.springLength }},
+                "springStrength": {{ config.physics.springStrength }}
+            }
+        }
+    </script>
+    <script>
+        // Parse the server configuration from the JSON script tag
+        window.appConfig = JSON.parse(document.getElementById('server-config').textContent);
+    </script>
+    <script src="{{ url_for('static', filename='js/tooltip_manager.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html> 
