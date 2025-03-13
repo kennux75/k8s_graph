@@ -1076,23 +1076,36 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-    // Filter nodes by search term
-    function filterNodesBySearchTerm(searchTerm) {
-        const nodeFiltersContainer = document.querySelector('.node-filters-container');
-        if (!nodeFiltersContainer) return;
-        
-        const nodeFilters = nodeFiltersContainer.querySelectorAll('.node-filter');
-        searchTerm = searchTerm.toLowerCase();
-        
-        nodeFilters.forEach(filter => {
-            const label = filter.querySelector('.node-label');
-            const nodeName = label.textContent.toLowerCase();
+    // Function to highlight all nodes matching the search term
+    function highlightMatchingNodes(searchTerm) {
+        const visibleNodes = nodes.get();
+        const matchingNodes = visibleNodes.filter(node => node.id.toLowerCase().includes(searchTerm.toLowerCase()));
+
+        matchingNodes.forEach(node => {
+            // Highlight the node
+            const originalColor = node.color || '#848484'; // Default color
+            node.color = '#FF0000'; // Highlight color (red)
             
-            if (searchTerm === '' || nodeName.includes(searchTerm)) {
-                filter.style.display = 'flex';
-            } else {
-                filter.style.display = 'none';
-            }
+            // Temporarily disable physics for this node
+            const originalPhysics = node.physics;
+            node.physics = false; // Disable physics temporarily
+            nodes.update(node);
+
+            // Reset color and physics state after 1 second
+            setTimeout(() => {
+                node.color = originalColor;
+                node.physics = originalPhysics; // Restore original physics state
+                nodes.update(node);
+            }, 1000);
+        });
+    }
+
+    // Event listener for the search button
+    const searchButton = document.getElementById('search-button');
+    if (searchButton) {
+        searchButton.addEventListener('click', () => {
+            const searchTerm = nodeSearchInput.value;
+            highlightMatchingNodes(searchTerm);
         });
     }
     
