@@ -1100,7 +1100,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 node.color = originalColor;
                 node.physics = originalPhysics; // Restore original physics state
                 nodes.update(node);
-            }, 1500);
+            }, 2000);
         });
     }
 
