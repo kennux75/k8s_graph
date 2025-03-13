@@ -212,24 +212,11 @@ class K8sCommunicationGraph:
             kubeconfig = self.context_to_kubeconfig.get(context)
             
             namespaces = get_namespaces(context, self.excluded_namespaces, self.context_to_kubeconfig.get(context))
-            # Get all non-excluded namespaces
-            #namespaces = get_namespaces(context, self.excluded_namespaces, kubeconfig)
-            
-            # Filter out excluded namespaces
-            #non_excluded_namespaces = [ns for ns in namespaces if ns not in self.excluded_namespaces]
-            #logger.info(f"Found {len(non_excluded_namespaces)} non-excluded namespaces for context {context}")
-            #logger.info(f"Found {len(namespaces)} namespaces for context {context}")
-        
-            # Assign colors and shapes to namespaces
-            #logger.info(f"Assigning visual properties to namespaces {namespaces} for context {context}...")
-            #self.namespace_colors, self.namespace_shapes = assign_visual_properties(context, namespaces)
-            #self.namespace_colors, self.namespace_shapes = assign_visual_properties(context, all_namespaces)
         
             # Initialize node_counts dictionary for tracking service counts per namespace
             self.node_counts = {}
         
             # Process namespaces in parallel using a thread pool
-            #max_workers = min(MAX_WORKER_THREADS, len(non_excluded_namespaces))
             max_workers = min(MAX_WORKER_THREADS, len(namespaces))
             logger.info(f"Using {max_workers} worker threads for parallel processing for context {context}")
             
