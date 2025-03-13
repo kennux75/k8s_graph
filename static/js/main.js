@@ -1021,9 +1021,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const filtersContainer = document.createElement('div');
         filtersContainer.className = 'node-filters-container';
         
+        // Get search term
+        const searchTerm = nodeSearchInput ? nodeSearchInput.value.toLowerCase() : '';
+        
         // Get all nodes from our master list and sort them alphabetically
-        const nodeEntries = Array.from(allKnownNodes.entries());
-        nodeEntries.sort((a, b) => a[0].localeCompare(b[0]));
+        const nodeEntries = Array.from(allKnownNodes.entries())
+            .filter(([nodeId]) => searchTerm === '' || nodeId.toLowerCase().includes(searchTerm))
+            .sort((a, b) => a[0].localeCompare(b[0]));
         
         // Add a filter for each node
         nodeEntries.forEach(([nodeId, nodeData]) => {
@@ -1294,7 +1298,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Set up search functionality for node filters
         if (nodeSearchInput) {
             nodeSearchInput.addEventListener('input', (e) => {
-                filterNodesBySearchTerm(e.target.value);
+                updateNodeFilters();
             });
         }
         
