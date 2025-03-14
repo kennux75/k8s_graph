@@ -49,6 +49,7 @@ def parse_logs(logs, namespace, http_host_counts, namespaces_list, pods_with_ips
             continue
             
         line_count += 1
+        source = ""
         try:
             log_entry = json.loads(line)
             valid_json_count += 1
@@ -56,7 +57,7 @@ def parse_logs(logs, namespace, http_host_counts, namespaces_list, pods_with_ips
             # Extract infos from json line
             # the auth field in the json log_entry represents the source namespace or the origine of the request
             remoteaddr = extract_field_from_json_line(log_entry, "remoteaddr")
-            source = extract_field_from_json_line(log_entry, "auth")
+            auth = extract_field_from_json_line(log_entry, "auth")
             user_agent = extract_field_from_json_line(log_entry, "user_agent")
             request = extract_field_from_json_line(log_entry, "request")
             http_host = extract_field_from_json_line(log_entry, "http_host")
@@ -74,43 +75,65 @@ def parse_logs(logs, namespace, http_host_counts, namespaces_list, pods_with_ips
             if ("/metrics" in request.lower() or "/alive" in request.lower() or "/ready" in request.lower() or "/health" in request.lower() or "/ok.php" in request.lower() or "/monitoring" in request.lower()):
                 skipped_metrics_count += 1
                 #logger.debug(f"Skipping healthchecks request: {request}")
-                continue
-
             
             # # # loop test to detect namespace in the pods_with_ips
+            source_found = False
             for ns, pods in pods_with_ips.items():
-                #for pod_name, pod_ip in pods.items():
+                if source_found:
+                    break
+                    
                 for pod_name, pod_info in pods_with_ips[ns].items():
                     pod_ip = pod_info["ip"]
                     if remoteaddr_parsed == pod_ip:
                         # the remoteaddr IP {remoteaddr} has been detected in namespace {ns} for pod {pod_name} 
                         source = ns
                         logger.debug(f"Remoteaddr IP {remoteaddr_parsed} detected in namespace: {ns} for pod {pod_name} - setting source to {ns} for namespace {namespace}")
-
-                    # Check other IP addresses
-                    if str(remoteaddr_parsed).startswith("172.17.2.5") or str(remoteaddr_parsed).startswith("172.18.2.5"):
-                        source = "xinflbpub"
-                        logger.debug(f"Remoteaddr IP {remoteaddr_parsed} detected as a xinflbpub IP - setting source to {source} for namespace {namespace}")
-                    if str(remoteaddr_parsed).startswith("10.121.232") and not source:
-                        source = "From-kubeworkers"
-                        logger.debug(f"Remoteaddr IP {remoteaddr_parsed} detected as a kube worker IP - setting source to {source} for namespace {namespace}")
-                        #else:
-                        #    logger.debug(f"Remoteaddr IP {remoteaddr_parsed} detected as a kube worker IP - source already set to {source} for namespace {namespace}")
-                            #continue
-                    if "unknown" in str(remoteaddr_parsed).lower() and source:
-                        logger.debug(f"Remoteaddr IP {remoteaddr_parsed} detected as a unknown IP - source already set to {source} for namespace {namespace}")
-                        #continue
-                    if remoteaddr_parsed in ["10.120.100.186", "10.120.1.54", "10.120.1.155", "10.120.101.224"]:
-                        source = "xpayhdws"
-                        logger.debug(f"Remoteaddr IP {remoteaddr_parsed} detected as a xpayhdws IP - setting source to {source} for namespace {namespace}")
+                        source_found = True
+                        break  # Found exact match, no need to check other pods
+            
+            # Check special IP addresses outside the pod loop - only if no source was found by IP match
+            if not source_found:
+                # Check xinflbpub IPs
+                if str(remoteaddr_parsed).startswith("172.17.2.5") or str(remoteaddr_parsed).startswith("172.18.2.5"):
+                    if auth:
+                        source = "xinflbpub-from-" + auth  # Fixed string concatenation
+                        logger.debug(f"Remoteaddr IP {remoteaddr_parsed} detected as a xinflbpub IP and auth is defined as {auth} - setting source to xinflbpub-from-{auth} for namespace {namespace}")
                     else:
-                        if source:
-                            source = source
-                            logger.debug(f"Source IP not detected in any namespace but has IP: {remoteaddr_parsed} pod_ip = {pod_ip} and auth field {source} - letting source to {source} for namespace {namespace}")
-                        if not source:
-                            source = "unknown"
-                            logger.debug(f"Source IP not detected in any namespace but has IP: {remoteaddr_parsed} and auth field is empty - setting source to unknown to namespace {namespace}")
-                continue
+                        source = "xinflbpub"
+                        logger.debug(f"Remoteaddr IP {remoteaddr_parsed} detected as a xinflbpub IP and auth is empty - setting source to xinflbpub for namespace {namespace}")
+                    source_found = True
+                
+                elif str(remoteaddr_parsed).startswith("10.121.232") and auth:
+                    source = auth
+                    logger.debug(f"Remoteaddr IP {remoteaddr_parsed} detected as a kube worker IP and auth is defined as {auth} - setting source to {auth} for namespace {namespace}")
+                    source_found = True
+                
+                # Check kube worker IPs
+                elif str(remoteaddr_parsed).startswith("10.121.232") and not auth:
+                    source = "From-kubeworkers"
+                    logger.debug(f"Remoteaddr IP {remoteaddr_parsed} detected as a kube worker IP - setting source to {source} for namespace {namespace}")
+                    source_found = True
+                
+                # Check xpayhdws IPs
+                elif remoteaddr_parsed in ["10.120.100.186", "10.120.1.54", "10.120.1.155", "10.120.101.224"]:
+                    source = "xpayhdws"
+                    logger.debug(f"Remoteaddr IP {remoteaddr_parsed} detected as a xpayhdws IP - setting source to {source} for namespace {namespace}")
+                    source_found = True
+                
+                # Check for unknown IPs with auth
+                elif "unknown" in str(remoteaddr_parsed).lower() and auth:
+                    source = auth
+                    logger.debug(f"Remoteaddr IP {remoteaddr_parsed} detected as a unknown IP - auth already set to {auth} for namespace {namespace}")
+                    source_found = True
+                
+                # Fallback to auth or unknown
+                else:
+                    if auth:
+                        source = auth
+                        logger.debug(f"Source IP not detected in any namespace but has IP: {remoteaddr_parsed} and auth field {auth} - setting source to {auth} for namespace {namespace}")
+                    else:
+                        source = "unknown"
+                        logger.debug(f"Source IP not detected in any namespace but has IP: {remoteaddr_parsed} and auth field is empty - setting source to unknown for namespace {namespace}")
 
             target = namespace
 
@@ -120,7 +143,7 @@ def parse_logs(logs, namespace, http_host_counts, namespaces_list, pods_with_ips
             # Update http_host counts for the current namespace
             if http_host:
                 # Include the auth value in the key for counting
-                auth_value = source if source else "unknown_auth"  # Use "unknown_auth" if source is empty
+                auth_value = auth if auth else "unknown"  # Use "unknown_auth" if source is empty
                 if (http_host, auth_value) not in http_host_counts[namespace]:
                     http_host_counts[namespace][(http_host, auth_value)] = {
                         'count': 0, 
