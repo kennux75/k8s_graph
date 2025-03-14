@@ -1276,7 +1276,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
                 });
                 
-                statusDiv.innerHTML = "Node positions fixed. Nodes will not move during updates.";
+                statusDiv.innerHTML = "Node positions fixed.";
                 toggleFixedPositionsBtn.classList.add('active');
             } else {
                 // Unfix all nodes to allow movement
@@ -1287,7 +1287,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
                 });
                 
-                statusDiv.innerHTML = "Positions are now dynamic. Nodes may move during updates.";
+                statusDiv.innerHTML = "Positions are now dynamic.";
                 toggleFixedPositionsBtn.classList.remove('active');
             }
         }
