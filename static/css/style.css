@@ -305,4 +305,25 @@ body {
 #debug {
     color: black; /* Set text color to black */
     background-color: #f0f0f0; /* Ensure the background is light for contrast */
+}
+
+.filter-actions {
+    display: flex;
+    gap: 8px;
+    margin: 8px 0;
+    padding: 4px 0;
+}
+
+.filter-actions .action-button {
+    flex: 1;
+    padding: 4px 8px;
+    font-size: 0.9em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+}
+
+.filter-actions .action-button i {
+    font-size: 0.9em;
 } 

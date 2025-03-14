@@ -1644,6 +1644,41 @@ document.addEventListener('DOMContentLoaded', () => {
         if (toggleAnimationBtn) {
             toggleAnimationBtn.addEventListener('click', toggleAnimation);
         }
+
+        // Select All and Deselect All buttons
+        const selectAllBtn = document.getElementById('select-all-nodes');
+        const deselectAllBtn = document.getElementById('deselect-all-nodes');
+
+        if (selectAllBtn) {
+            selectAllBtn.addEventListener('click', () => {
+                // Clear all node filters
+                nodeFilters.clear();
+                // Update checkboxes to show all nodes as selected
+                const checkboxes = document.querySelectorAll('.node-checkbox');
+                checkboxes.forEach(checkbox => {
+                    checkbox.checked = true;
+                });
+                // Apply the filters (which will show all nodes)
+                applyNodeFilters();
+            });
+        }
+
+        if (deselectAllBtn) {
+            deselectAllBtn.addEventListener('click', () => {
+                // Add all nodes to filters
+                const allNodeIds = Array.from(allKnownNodes.keys());
+                allNodeIds.forEach(nodeId => {
+                    nodeFilters.add(nodeId);
+                });
+                // Update checkboxes to show all nodes as deselected
+                const checkboxes = document.querySelectorAll('.node-checkbox');
+                checkboxes.forEach(checkbox => {
+                    checkbox.checked = false;
+                });
+                // Apply the filters (which will hide all nodes)
+                applyNodeFilters();
+            });
+        }
     }
     
     // Function to reset cumulative data
