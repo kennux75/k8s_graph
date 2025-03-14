@@ -79,7 +79,9 @@ def parse_logs(logs, namespace, http_host_counts, namespaces_list, pods_with_ips
             
             # # # loop test to detect namespace in the pods_with_ips
             for ns, pods in pods_with_ips.items():
-                for pod_name, pod_ip in pods.items():
+                #for pod_name, pod_ip in pods.items():
+                for pod_name, pod_info in pods_with_ips[ns].items():
+                    pod_ip = pod_info["ip"]
                     if remoteaddr_parsed == pod_ip:
                         # the remoteaddr IP {remoteaddr} has been detected in namespace {ns} for pod {pod_name} 
                         source = ns
@@ -188,7 +190,7 @@ def extract_and_parse_logs_threaded(context, namespace, http_host_counts_lock, k
     
     # Find a web pod in this namespace
     from libs.parsing.kubernetes import find_web_pod_in_namespace
-    web_pod = find_web_pod_in_namespace(context, namespace, kubeconfig)
+    web_pod = find_web_pod_in_namespace(context, namespace, kubeconfig, pods_with_ips)
     
     if not web_pod:
         logger.warning(f"In context {context}, no pods found in namespace {namespace}")
@@ -222,7 +224,8 @@ def extract_logs(context, namespace, pod_name, kubeconfig=None):
         str: The logs from the pod
     """
     logger.info(f"Extracting logs from pod {pod_name} in namespace {namespace} in context {context} with kubeconfig: {kubeconfig}")
-    cmd = ["kubectl", "logs", "-n", namespace, pod_name, "--tail", str(LOG_LINES_LIMIT)]
+    #cmd = ["kubectl", "logs", "-n", namespace, pod_name, "--tail", str(LOG_LINES_LIMIT)]
+    cmd = ["kubectl", "logs", "-n", namespace, "deployment/" + namespace, "--tail", str(LOG_LINES_LIMIT)]
     
     # Add context if specified
     if context and not kubeconfig:

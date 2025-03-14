@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const refreshBtn = document.getElementById('refresh-btn');
     const togglePhysicsBtn = document.getElementById('toggle-physics-btn');
     const physicsBtnText = document.getElementById('physics-btn-text');
-    const stabilizeBtn = document.getElementById('stabilize-btn');
+    //const stabilizeBtn = document.getElementById('stabilize-btn');
     const resetViewBtn = document.getElementById('reset-view-btn');
     const toggleFixedPositionsBtn = document.getElementById('toggle-fixed-positions-btn');
     //const toggleCumulativeDataBtn = document.getElementById('toggle-cumulative-data-btn');
@@ -614,7 +614,46 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Store all edges in our global map for future reference
             data.edges.forEach(edge => {
+                // Ensure each edge has a unique ID
+                if (!edge.id) {
+                    // Create a unique ID based on from and to nodes
+                    edge.id = `${edge.from}-${edge.to}`;
+                }
+                
+                // Store the edge in our global map
                 allKnownEdges.set(edge.id, { ...edge });
+                
+                // Also store edges by their connected nodes for easier lookup
+                // This helps when restoring edges for reselected nodes
+                const fromNodeKey = `from:${edge.from}`;
+                const toNodeKey = `to:${edge.to}`;
+                
+                if (!allKnownEdges.has(fromNodeKey)) {
+                    allKnownEdges.set(fromNodeKey, []);
+                }
+                if (!allKnownEdges.has(toNodeKey)) {
+                    allKnownEdges.set(toNodeKey, []);
+                }
+                
+                // Add this edge to the lists for both connected nodes
+                const fromEdges = allKnownEdges.get(fromNodeKey);
+                const toEdges = allKnownEdges.get(toNodeKey);
+                
+                if (Array.isArray(fromEdges)) {
+                    // Check if this edge is already in the list
+                    const edgeExists = fromEdges.some(e => e.id === edge.id);
+                    if (!edgeExists) {
+                        fromEdges.push({ ...edge });
+                    }
+                }
+                
+                if (Array.isArray(toEdges)) {
+                    // Check if this edge is already in the list
+                    const edgeExists = toEdges.some(e => e.id === edge.id);
+                    if (!edgeExists) {
+                        toEdges.push({ ...edge });
+                    }
+                }
             });
             
             // Get the current state of namespace filters
@@ -996,6 +1035,19 @@ document.addEventListener('DOMContentLoaded', () => {
         const visibleNodeIds = allNodesInDataset.map(node => node.id)
             .filter(nodeId => !nodeFilters.has(nodeId));
         
+        // Save positions of all current nodes before making changes
+        if (network) {
+            const positions = network.getPositions(visibleNodeIds);
+            visibleNodeIds.forEach(nodeId => {
+                if (positions[nodeId]) {
+                    nodePositions[nodeId] = {
+                        x: positions[nodeId].x,
+                        y: positions[nodeId].y
+                    };
+                }
+            });
+        }
+        
         // Get nodes that should be visible but aren't in the dataset
         const nodesToAdd = [];
         
@@ -1005,7 +1057,26 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!nodeFilters.has(nodeId) && !visibleNodeIds.includes(nodeId)) {
                 // This node should be visible but isn't in the dataset
                 console.log(`Adding previously hidden node: ${nodeId}`);
-                nodesToAdd.push(nodeData);
+                
+                // Create a copy of the node data
+                const nodeToAdd = { ...nodeData };
+                
+                // Apply saved position if available
+                if (nodePositions[nodeId] && fixedPositionsEnabled) {
+                    nodeToAdd.x = nodePositions[nodeId].x;
+                    nodeToAdd.y = nodePositions[nodeId].y;
+                    nodeToAdd.fixed = true;
+                    
+                    // Preserve physics settings based on edge count
+                    const edgeCount = nodeEdgeCounts[nodeId] || 0;
+                    if (edgeCount > 3) {
+                        nodeToAdd.physics = false;
+                    }
+                    
+                    console.log(`Applied saved position to node ${nodeId}:`, nodePositions[nodeId]);
+                }
+                
+                nodesToAdd.push(nodeToAdd);
             }
         }
         
@@ -1013,11 +1084,98 @@ document.addEventListener('DOMContentLoaded', () => {
         const visibleNodes = allNodesInDataset.filter(node => !nodeFilters.has(node.id))
             .concat(nodesToAdd);
         
-        // Get all edges
-        const allEdges = edges.get();
-        const visibleEdges = allEdges.filter(edge => 
-            !nodeFilters.has(edge.from) && !nodeFilters.has(edge.to)
-        );
+        // Get all edges that should be visible
+        const visibleEdges = [];
+        
+        // First, add all currently visible edges that connect visible nodes
+        const currentEdges = edges.get();
+        for (const edge of currentEdges) {
+            if (!nodeFilters.has(edge.from) && !nodeFilters.has(edge.to)) {
+                visibleEdges.push(edge);
+            }
+        }
+        
+        // Then, check for any newly visible nodes and restore their edges
+        // This happens when a node is reselected and we need to restore its edges
+        const newlyVisibleNodes = nodesToAdd.map(node => node.id);
+        
+        if (newlyVisibleNodes.length > 0) {
+            console.log("Restoring edges for newly visible nodes:", newlyVisibleNodes);
+            
+            // For each newly visible node, find all its edges in allKnownEdges
+            newlyVisibleNodes.forEach(nodeId => {
+                // Check edges where this node is the source
+                const fromKey = `from:${nodeId}`;
+                if (allKnownEdges.has(fromKey)) {
+                    const fromEdges = allKnownEdges.get(fromKey);
+                    if (Array.isArray(fromEdges)) {
+                        fromEdges.forEach(edge => {
+                            // Only add the edge if both nodes are visible
+                            if (!nodeFilters.has(edge.to)) {
+                                // Check if this edge is already in visibleEdges
+                                const edgeExists = visibleEdges.some(e => 
+                                    (e.from === edge.from && e.to === edge.to) || 
+                                    (e.id && e.id === edge.id)
+                                );
+                                
+                                if (!edgeExists) {
+                                    console.log(`Restoring outgoing edge: ${edge.from} -> ${edge.to}`);
+                                    visibleEdges.push({ ...edge });
+                                }
+                            }
+                        });
+                    }
+                }
+                
+                // Check edges where this node is the target
+                const toKey = `to:${nodeId}`;
+                if (allKnownEdges.has(toKey)) {
+                    const toEdges = allKnownEdges.get(toKey);
+                    if (Array.isArray(toEdges)) {
+                        toEdges.forEach(edge => {
+                            // Only add the edge if both nodes are visible
+                            if (!nodeFilters.has(edge.from)) {
+                                // Check if this edge is already in visibleEdges
+                                const edgeExists = visibleEdges.some(e => 
+                                    (e.from === edge.from && e.to === edge.to) || 
+                                    (e.id && e.id === edge.id)
+                                );
+                                
+                                if (!edgeExists) {
+                                    console.log(`Restoring incoming edge: ${edge.from} -> ${edge.to}`);
+                                    visibleEdges.push({ ...edge });
+                                }
+                            }
+                        });
+                    }
+                }
+            });
+        }
+        
+        // Also check all allKnownEdges for any edges that should be visible
+        // This is a fallback to ensure we don't miss any edges
+        for (const [edgeId, edgeData] of allKnownEdges.entries()) {
+            // Skip the node-specific edge lists we created
+            if (edgeId.startsWith('from:') || edgeId.startsWith('to:')) {
+                continue;
+            }
+            
+            // Check if this edge connects two visible nodes
+            if (edgeData.from && edgeData.to && 
+                !nodeFilters.has(edgeData.from) && !nodeFilters.has(edgeData.to)) {
+                
+                // Check if this edge is already in visibleEdges
+                const edgeExists = visibleEdges.some(e => 
+                    (e.from === edgeData.from && e.to === edgeData.to) || 
+                    (e.id && e.id === edgeData.id)
+                );
+                
+                if (!edgeExists) {
+                    console.log(`Restoring edge from global list: ${edgeData.from} -> ${edgeData.to}`);
+                    visibleEdges.push({ ...edgeData });
+                }
+            }
+        }
         
         // Update the datasets
         nodes.clear();
@@ -1027,6 +1185,28 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Update the network
         network.setData({ nodes, edges });
+        
+        // After updating, fix all node positions to prevent movement
+        if (fixedPositionsEnabled && network) {
+            const allNodeIds = nodes.getIds();
+            const currentPositions = network.getPositions(allNodeIds);
+            
+            allNodeIds.forEach(nodeId => {
+                // Update node positions in the dataset
+                nodes.update({
+                    id: nodeId,
+                    x: currentPositions[nodeId].x,
+                    y: currentPositions[nodeId].y,
+                    fixed: true
+                });
+                
+                // Also update our stored positions
+                nodePositions[nodeId] = {
+                    x: currentPositions[nodeId].x,
+                    y: currentPositions[nodeId].y
+                };
+            });
+        }
         
         // Update the node filter checkboxes to match the current state
         const nodeCheckboxes = document.querySelectorAll('.node-checkbox');
@@ -1097,7 +1277,68 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Show node
                     nodeFilters.delete(nodeId);
                 } else {
-                    // Hide node
+                    // Hide node - save its position and edges first if it's in the network
+                    if (network) {
+                        // Save node position
+                        const nodePosition = network.getPositions([nodeId])[nodeId];
+                        if (nodePosition) {
+                            nodePositions[nodeId] = {
+                                x: nodePosition.x,
+                                y: nodePosition.y
+                            };
+                            console.log(`Saved position for node ${nodeId} before hiding:`, nodePositions[nodeId]);
+                        }
+                        
+                        // Save all edges connected to this node
+                        const currentEdges = edges.get();
+                        const connectedEdges = currentEdges.filter(edge => 
+                            edge.from === nodeId || edge.to === nodeId
+                        );
+                        
+                        if (connectedEdges.length > 0) {
+                            console.log(`Saving ${connectedEdges.length} edges for node ${nodeId} before hiding`);
+                            
+                            connectedEdges.forEach(edge => {
+                                // Ensure the edge has an ID
+                                if (!edge.id) {
+                                    edge.id = `${edge.from}-${edge.to}`;
+                                }
+                                
+                                // Store in the global edge map
+                                allKnownEdges.set(edge.id, { ...edge });
+                                
+                                // Also store by connected nodes
+                                const fromNodeKey = `from:${edge.from}`;
+                                const toNodeKey = `to:${edge.to}`;
+                                
+                                if (!allKnownEdges.has(fromNodeKey)) {
+                                    allKnownEdges.set(fromNodeKey, []);
+                                }
+                                if (!allKnownEdges.has(toNodeKey)) {
+                                    allKnownEdges.set(toNodeKey, []);
+                                }
+                                
+                                // Add to the node-specific lists
+                                const fromEdges = allKnownEdges.get(fromNodeKey);
+                                const toEdges = allKnownEdges.get(toNodeKey);
+                                
+                                if (Array.isArray(fromEdges)) {
+                                    const edgeExists = fromEdges.some(e => e.id === edge.id);
+                                    if (!edgeExists) {
+                                        fromEdges.push({ ...edge });
+                                    }
+                                }
+                                
+                                if (Array.isArray(toEdges)) {
+                                    const edgeExists = toEdges.some(e => e.id === edge.id);
+                                    if (!edgeExists) {
+                                        toEdges.push({ ...edge });
+                                    }
+                                }
+                            });
+                        }
+                    }
+                    
                     nodeFilters.add(nodeId);
                 }
                 
@@ -1162,35 +1403,34 @@ document.addEventListener('DOMContentLoaded', () => {
         togglePhysics();
     });
     
-    stabilizeBtn.addEventListener('click', () => {
-        statusDiv.innerHTML = "Stabilizing...";
-        network.stabilize(1000);
-        
-        // Store node positions after stabilization
-        network.once("stabilizationIterationsDone", function() {
-            const allNodeIds = nodes.getIds();
-            const positions = network.getPositions(allNodeIds);
+    // stabilizeBtn.addEventListener('click', () => {
+    //     statusDiv.innerHTML = "Stabilizing...";
+    //     network.stabilize(1000);
+    //     // Store node positions after stabilization
+    //     network.once("stabilizationIterationsDone", function() {
+    //         const allNodeIds = nodes.getIds();
+    //         const positions = network.getPositions(allNodeIds);
             
-            allNodeIds.forEach(nodeId => {
-                nodePositions[nodeId] = { 
-                    x: positions[nodeId].x, 
-                    y: positions[nodeId].y 
-                };
+    //         allNodeIds.forEach(nodeId => {
+    //             nodePositions[nodeId] = { 
+    //                 x: positions[nodeId].x, 
+    //                 y: positions[nodeId].y 
+    //             };
                 
-                // If fixed positions are enabled, update nodes to be fixed
-                if (fixedPositionsEnabled) {
-                    nodes.update({
-                        id: nodeId,
-                        x: positions[nodeId].x,
-                        y: positions[nodeId].y,
-                        fixed: true
-                    });
-                }
-            });
+    //             // If fixed positions are enabled, update nodes to be fixed
+    //             if (fixedPositionsEnabled) {
+    //                 nodes.update({
+    //                     id: nodeId,
+    //                     x: positions[nodeId].x,
+    //                     y: positions[nodeId].y,
+    //                     fixed: true
+    //                 });
+    //             }
+    //         });
             
-            statusDiv.innerHTML = "Stabilization complete. Node positions updated.";
-        });
-    });
+    //         statusDiv.innerHTML = "Stabilization complete. Node positions updated.";
+    //     });
+    // });
     
     resetViewBtn.addEventListener('click', () => {
         network.fit({

@@ -139,14 +139,14 @@ def count_pods_in_namespace(context, namespace, kubeconfig=None):
         logger.warning(f"Error counting pods in namespace {namespace} in context {context}: {e}")
         return 0
 
-def find_web_pod_in_namespace(context, namespace, kubeconfig=None):
+def find_web_pod_in_namespace(context, namespace, kubeconfig=None, pods_with_ips=None):
     """Find a pod running a web server in the given namespace.
     
     Args:
         context (str): The Kubernetes context
         namespace (str): The namespace to search in
         kubeconfig (str, optional): Path to the kubeconfig file
-        
+        pods_with_ips (dict, optional): Dictionary of pods with their IPs
     Returns:
         str: Name of the first web pod found, or None if none found
     """
@@ -162,30 +162,34 @@ def find_web_pod_in_namespace(context, namespace, kubeconfig=None):
         cmd.insert(2, kubeconfig)
         
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
-        pods_data = json.loads(result.stdout)
+        #result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        #pods_data = json.loads(result.stdout)
+        #pods_data = pods_with_ips[namespace]
         
         # Look for pods with typical web server container names or ports
-        for pod in pods_data["items"]:
-            pod_name = pod["metadata"]["name"]
-            
+        for pod_name, pod_info in pods_with_ips[namespace].items():
+            #logger.info(f"In context {context}, namespace {namespace} has pod {pod_name} with IP {pod_ip}")
             # Check if pod name contains web-related keywords
             if any(keyword in pod_name.lower() for keyword in ["web", "http", "nginx", "api", "webapp"]):
                 logger.info(f"In context {context}, found web pod by name: {pod_name}")
                 return pod_name
             
+            port = pod_info["port"]
+            if port in [80, 443, 8080, 8443]:
+                logger.info(f"In context {context}, found web pod by port: {pod_name}")
+                return pod_name
             # Check container ports
-            if "containers" in pod["spec"]:
-                for container in pod["spec"]["containers"]:
-                    if "ports" in container:
-                        for port in container["ports"]:
-                            if port.get("containerPort") in [80, 443, 8080, 8443]:
-                                logger.info(f"In context {context}, found web pod by port: {pod_name}")
-                                return pod_name
+            # if "containers" in pod["spec"]:
+            #     for container in pod["spec"]["containers"]:
+            #         if "ports" in container:
+            #             for port in container["ports"]:
+            #                 if port.get("containerPort") in [80, 443, 8080, 8443]:
+            #                     logger.info(f"In context {context}, found web pod by port: {pod_name}")
+            #                     return pod_name
         
         # If no obvious web pod found, return the first pod (if any)
-        if pods_data["items"]:
-            pod_name = pods_data["items"][0]["metadata"]["name"]
+        if pods_with_ips[namespace].items():
+            pod_name = pods_with_ips[namespace][0]["metadata"]["name"]
             logger.info(f"In context {context}, no specific web pod found, using first pod: {pod_name}")
             return pod_name
         else:
@@ -231,7 +235,18 @@ def get_all_pods_with_ips_in_namespaces(excluded_namespaces, contexts=None):
                     namespace = pod["metadata"]["namespace"]
                     pod_name = pod["metadata"]["name"]
                     pod_ip = pod["status"].get("podIP")
-                    pods_with_ips[namespace][pod_name] = pod_ip
+                    
+                    # Check if the pod has containers and if the first container has ports
+                    if "containers" in pod["spec"] and pod["spec"]["containers"]:
+                        container = pod["spec"]["containers"][0]
+                        if "ports" in container and container["ports"]:
+                            pod_port = container["ports"][0].get("containerPort")
+                        else:
+                            pod_port = None  # Set to None if no ports are defined
+                    else:
+                        pod_port = None  # Set to None if no containers are defined
+                    
+                    pods_with_ips[namespace][pod_name] = {"ip": pod_ip, "port": pod_port}
             
                 logger.debug(f"Found {len(pods_with_ips[namespace])} pods with IPs in namespace {namespace}")
             except subprocess.CalledProcessError as e:
