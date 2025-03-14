@@ -569,6 +569,11 @@ document.addEventListener('DOMContentLoaded', () => {
             // Increment update counter
             updateCounter++;
             
+            // Ensure fixed positions are enabled for updates
+            // This ensures positions are preserved during scheduler updates
+            const wasFixedPositionsEnabled = fixedPositionsEnabled;
+            fixedPositionsEnabled = true;
+            
             // Get current positions of all nodes before updating
             if (network) {
                 const existingNodeIds = nodes.getIds();
@@ -579,7 +584,16 @@ document.addEventListener('DOMContentLoaded', () => {
                             x: positions[nodeId].x,
                             y: positions[nodeId].y
                         };
+                        
+                        // Also update the node in the dataset to ensure it's fixed
+                        nodes.update({
+                            id: nodeId,
+                            x: positions[nodeId].x,
+                            y: positions[nodeId].y,
+                            fixed: true
+                        });
                     });
+                    console.log("Saved positions for", existingNodeIds.length, "nodes before update");
                 }
             }
             
@@ -846,8 +860,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     node.physics = false;
                 }
                 
-                // If we have a saved position for this node and fixed positions are enabled, use it
-                if (nodePositions[node.id] && fixedPositionsEnabled) {
+                // Always use saved position for this node during updates
+                if (nodePositions[node.id]) {
                     node.x = nodePositions[node.id].x;
                     node.y = nodePositions[node.id].y;
                     node.fixed = true;
@@ -887,10 +901,35 @@ document.addEventListener('DOMContentLoaded', () => {
                         barnesHut: physicsOptions.barnesHut
                     }
                 });
+                
+                // After updating, fix all node positions to prevent movement
+                if (fixedPositionsEnabled) {
+                    const allNodeIds = nodes.getIds();
+                    const currentPositions = network.getPositions(allNodeIds);
+                    
+                    allNodeIds.forEach(nodeId => {
+                        // Update node positions in the dataset
+                        nodes.update({
+                            id: nodeId,
+                            x: currentPositions[nodeId].x,
+                            y: currentPositions[nodeId].y,
+                            fixed: true
+                        });
+                        
+                        // Also update our stored positions
+                        nodePositions[nodeId] = {
+                            x: currentPositions[nodeId].x,
+                            y: currentPositions[nodeId].y
+                        };
+                    });
+                }
             } else {
                 // Initialize network if it doesn't exist
                 initNetwork();
             }
+            
+            // Restore the original fixed positions setting
+            fixedPositionsEnabled = wasFixedPositionsEnabled;
             
             // Update last update time
             const now = new Date();
