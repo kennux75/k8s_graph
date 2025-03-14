@@ -79,7 +79,9 @@ def parse_logs(logs, namespace, http_host_counts, namespaces_list, pods_with_ips
             
             # # # loop test to detect namespace in the pods_with_ips
             for ns, pods in pods_with_ips.items():
-                for pod_name, pod_ip in pods.items():
+                #for pod_name, pod_ip in pods.items():
+                for pod_name, pod_info in pods_with_ips[ns].items():
+                    pod_ip = pod_info["ip"]
                     if remoteaddr_parsed == pod_ip:
                         # the remoteaddr IP {remoteaddr} has been detected in namespace {ns} for pod {pod_name} 
                         source = ns
