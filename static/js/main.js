@@ -1648,6 +1648,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // Select All and Deselect All buttons
         const selectAllBtn = document.getElementById('select-all-nodes');
         const deselectAllBtn = document.getElementById('deselect-all-nodes');
+        const selectFilteredBtn = document.getElementById('select-filtered-nodes');
+        const deselectFilteredBtn = document.getElementById('deselect-filtered-nodes');
 
         if (selectAllBtn) {
             selectAllBtn.addEventListener('click', () => {
@@ -1677,6 +1679,59 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 // Apply the filters (which will hide all nodes)
                 applyNodeFilters();
+            });
+        }
+
+        // Select and Deselect Filtered buttons
+        if (selectFilteredBtn) {
+            selectFilteredBtn.addEventListener('click', () => {
+                // Get current search term
+                const searchTerm = nodeSearchInput ? nodeSearchInput.value.toLowerCase() : '';
+                if (!searchTerm) return; // Do nothing if no search term
+                
+                // Get all node checkboxes currently visible in the filter
+                const visibleCheckboxes = document.querySelectorAll('.node-checkbox');
+                
+                // Process each checkbox
+                visibleCheckboxes.forEach(checkbox => {
+                    const nodeId = checkbox.dataset.nodeId;
+                    if (nodeId.toLowerCase().includes(searchTerm)) {
+                        // Remove this node from filters (show it)
+                        nodeFilters.delete(nodeId);
+                        // Update checkbox
+                        checkbox.checked = true;
+                    }
+                });
+                
+                // Apply the updated filters
+                applyNodeFilters();
+                statusDiv.innerHTML = `Selected all nodes matching "${searchTerm}"`;
+            });
+        }
+
+        if (deselectFilteredBtn) {
+            deselectFilteredBtn.addEventListener('click', () => {
+                // Get current search term
+                const searchTerm = nodeSearchInput ? nodeSearchInput.value.toLowerCase() : '';
+                if (!searchTerm) return; // Do nothing if no search term
+                
+                // Get all node checkboxes currently visible in the filter
+                const visibleCheckboxes = document.querySelectorAll('.node-checkbox');
+                
+                // Process each checkbox
+                visibleCheckboxes.forEach(checkbox => {
+                    const nodeId = checkbox.dataset.nodeId;
+                    if (nodeId.toLowerCase().includes(searchTerm)) {
+                        // Add this node to filters (hide it)
+                        nodeFilters.add(nodeId);
+                        // Update checkbox
+                        checkbox.checked = false;
+                    }
+                });
+                
+                // Apply the updated filters
+                applyNodeFilters();
+                statusDiv.innerHTML = `Deselected all nodes matching "${searchTerm}"`;
             });
         }
     }
