@@ -326,4 +326,15 @@ body {
 
 .filter-actions .action-button i {
     font-size: 0.9em;
+}
+
+/* Style for buttons with multiple icons */
+.filter-actions .action-button i + i {
+    margin-left: 2px;
+    margin-right: 4px;
+}
+
+/* Update the margin between filter-actions sections */
+.filter-actions + .filter-actions {
+    margin-top: 0;
 } 

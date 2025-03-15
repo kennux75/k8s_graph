@@ -76,7 +76,7 @@
                 </div>
             </div>
             
-            <div class="panel-section">
+            <!-- <div class="panel-section">
                 <h3>
                     <span>Update Interval</span>
                     <button class="collapse-btn">
@@ -92,11 +92,11 @@
                         </button>
                     </div>
                 </div>
-            </div>
+            </div> -->
             
             <div class="panel-section">
                 <h3>
-                    <span>Filter by Node</span>
+                    <span>Filters</span>
                     <button class="collapse-btn">
                         <i class="fas fa-chevron-up"></i>
                     </button>
@@ -109,6 +109,14 @@
                         </button>
                         <button id="clear-search-btn" class="action-button">
                             <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="filter-actions">
+                        <button id="select-filtered-nodes" class="action-button">
+                            <i class="fas fa-filter"></i><i class="fas fa-check"></i> Select Filtered
+                        </button>
+                        <button id="deselect-filtered-nodes" class="action-button">
+                            <i class="fas fa-filter"></i><i class="fas fa-times"></i> Deselect Filtered
                         </button>
                     </div>
                     <div class="filter-actions">
@@ -150,6 +158,24 @@
                             <span class="color-box" style="background-color: #e74c3c;"></span>
                             <label for="edge-filter-5xx" class="edge-label">5xx errors</label>
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel-section">
+                <h3>
+                    <span>Update Interval</span>
+                    <button class="collapse-btn">
+                        <i class="fas fa-chevron-up"></i>
+                    </button>
+                </h3>
+                <div class="panel-content">
+                    <div class="interval-control">
+                        <input type="number" id="update-interval" min="{{ config.minInterval }}" value="{{ config.updateInterval }}" class="interval-input">
+                        <span>seconds</span>
+                        <button id="set-interval-btn" class="action-button">
+                            <i class="fas fa-clock"></i> Set
+                        </button>
                     </div>
                 </div>
             </div>

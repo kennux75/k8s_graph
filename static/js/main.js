@@ -6,13 +6,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const refreshBtn = document.getElementById('refresh-btn');
     const togglePhysicsBtn = document.getElementById('toggle-physics-btn');
     const physicsBtnText = document.getElementById('physics-btn-text');
-    //const stabilizeBtn = document.getElementById('stabilize-btn');
     const resetViewBtn = document.getElementById('reset-view-btn');
     const toggleFixedPositionsBtn = document.getElementById('toggle-fixed-positions-btn');
-    //const toggleCumulativeDataBtn = document.getElementById('toggle-cumulative-data-btn');
-    //const resetCumulativeDataBtn = document.getElementById('reset-cumulative-data-btn');
-    //const testDataBtn = document.getElementById('test-data-btn');
-    //const namespaceFilters = document.getElementById('namespace-filters');
     const statusDiv = document.getElementById('status');
     const lastUpdateDiv = document.getElementById('last-update');
     const updateIntervalInput = document.getElementById('update-interval');
@@ -1648,6 +1643,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // Select All and Deselect All buttons
         const selectAllBtn = document.getElementById('select-all-nodes');
         const deselectAllBtn = document.getElementById('deselect-all-nodes');
+        const selectFilteredBtn = document.getElementById('select-filtered-nodes');
+        const deselectFilteredBtn = document.getElementById('deselect-filtered-nodes');
 
         if (selectAllBtn) {
             selectAllBtn.addEventListener('click', () => {
@@ -1677,6 +1674,59 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 // Apply the filters (which will hide all nodes)
                 applyNodeFilters();
+            });
+        }
+
+        // Select and Deselect Filtered buttons
+        if (selectFilteredBtn) {
+            selectFilteredBtn.addEventListener('click', () => {
+                // Get current search term
+                const searchTerm = nodeSearchInput ? nodeSearchInput.value.toLowerCase() : '';
+                if (!searchTerm) return; // Do nothing if no search term
+                
+                // Get all node checkboxes currently visible in the filter
+                const visibleCheckboxes = document.querySelectorAll('.node-checkbox');
+                
+                // Process each checkbox
+                visibleCheckboxes.forEach(checkbox => {
+                    const nodeId = checkbox.dataset.nodeId;
+                    if (nodeId.toLowerCase().includes(searchTerm)) {
+                        // Remove this node from filters (show it)
+                        nodeFilters.delete(nodeId);
+                        // Update checkbox
+                        checkbox.checked = true;
+                    }
+                });
+                
+                // Apply the updated filters
+                applyNodeFilters();
+                statusDiv.innerHTML = `Selected all nodes matching "${searchTerm}"`;
+            });
+        }
+
+        if (deselectFilteredBtn) {
+            deselectFilteredBtn.addEventListener('click', () => {
+                // Get current search term
+                const searchTerm = nodeSearchInput ? nodeSearchInput.value.toLowerCase() : '';
+                if (!searchTerm) return; // Do nothing if no search term
+                
+                // Get all node checkboxes currently visible in the filter
+                const visibleCheckboxes = document.querySelectorAll('.node-checkbox');
+                
+                // Process each checkbox
+                visibleCheckboxes.forEach(checkbox => {
+                    const nodeId = checkbox.dataset.nodeId;
+                    if (nodeId.toLowerCase().includes(searchTerm)) {
+                        // Add this node to filters (hide it)
+                        nodeFilters.add(nodeId);
+                        // Update checkbox
+                        checkbox.checked = false;
+                    }
+                });
+                
+                // Apply the updated filters
+                applyNodeFilters();
+                statusDiv.innerHTML = `Deselected all nodes matching "${searchTerm}"`;
             });
         }
     }
