@@ -99,8 +99,14 @@ def parse_logs(logs, namespace, http_host_counts, namespaces_list, pods_with_ips
                         source = "xinflbpub-from-" + auth  # Fixed string concatenation
                         logger.debug(f"Remoteaddr IP {remoteaddr_parsed} detected as a xinflbpub IP and auth is defined as {auth} - setting source to xinflbpub-from-{auth} for namespace {namespace}")
                     else:
-                        source = "xinflbpub"
-                        logger.debug(f"Remoteaddr IP {remoteaddr_parsed} detected as a xinflbpub IP and auth is empty - setting source to xinflbpub for namespace {namespace}")
+                        if namespace == "api-pay-public":
+                            if "/pspnotification/" in request:
+                                origin = re.search(r'/([^/]+) HTTP', request).group(1) 
+                                source = "xinflbpub-from-" + origin
+                                logger.debug(f"Remoteaddr IP {remoteaddr_parsed} detected as a xinflbpub IP and auth is empty but pspnotif identified for api-pay-public - setting source to xinflbpub-from-{origin} for namespace {namespace}")
+                        else:
+                            source = "xinflbpub"
+                            logger.debug(f"Remoteaddr IP {remoteaddr_parsed} detected as a xinflbpub IP and auth is empty - setting source to xinflbpub for namespace {namespace}")
                     source_found = True
                 
                 elif str(remoteaddr_parsed).startswith("10.121.232") and auth:
