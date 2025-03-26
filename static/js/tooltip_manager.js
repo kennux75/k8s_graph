@@ -116,7 +116,7 @@ function updateEdgeTooltip(edge, cumulativeData) {
         
         // Add the 5xx examples
         if (!modifiedTitle.includes("5xx Error Examples:")) {
-            modifiedTitle += "\n\n" + cumulativeData.five_xx_examples;
+            modifiedTitle += "\n" + cumulativeData.five_xx_examples;
         }
     }
     

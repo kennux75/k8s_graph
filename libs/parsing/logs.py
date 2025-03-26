@@ -149,7 +149,8 @@ def parse_logs(logs, namespace, http_host_counts, namespaces_list, pods_with_ips
             # Update http_host counts for the current namespace
             if http_host:
                 # Include the auth value in the key for counting
-                auth_value = auth if auth else "unknown"  # Use "unknown_auth" if source is empty
+                #auth_value = auth if auth else "unknown"  # Use "unknown_auth" if source is empty
+                auth_value = source
                 if (http_host, auth_value) not in http_host_counts[namespace]:
                     http_host_counts[namespace][(http_host, auth_value)] = {
                         'count': 0, 
@@ -168,6 +169,7 @@ def parse_logs(logs, namespace, http_host_counts, namespaces_list, pods_with_ips
                     status_code_str = str(status_code)
                     if re.match(r'^4\d{2}$', status_code_str):  # Matches 4xx
                         http_host_counts[namespace][(http_host, auth_value)]['4xx'] += 1
+                        logger.debug(f"4xx error detected for namespace {namespace} from auth {auth_value} with http_host {http_host} - setting count to {http_host_counts[namespace][(http_host, auth_value)]['4xx']}")
                     elif re.match(r'^5\d{2}$', status_code_str):  # Matches 5xx
                         http_host_counts[namespace][(http_host, auth_value)]['5xx'] += 1
                         # Store the log entry for 5xx errors
@@ -179,6 +181,7 @@ def parse_logs(logs, namespace, http_host_counts, namespaces_list, pods_with_ips
                         # }
                         #http_host_counts[namespace][(http_host, auth_value)]['5xx_entries'].append(log_details)
                         http_host_counts[namespace][(http_host, auth_value)]['5xx_entries'].append(log_entry)
+                        logger.debug(f"5xx error detected in namespace {namespace} from auth {auth_value} with http_host {http_host} - setting count to {http_host_counts[namespace][(http_host, auth_value)]['5xx']}")
                     elif re.match(r'^3\d{2}$', status_code_str):  # Matches 3xx
                         http_host_counts[namespace][(http_host, auth_value)]['3xx'] += 1
                     elif re.match(r'^2\d{2}$', status_code_str):  # Matches 2xx
@@ -255,6 +258,7 @@ def extract_logs(context, namespace, pod_name, kubeconfig=None):
     logger.info(f"Extracting logs from pod {pod_name} in namespace {namespace} in context {context} with kubeconfig: {kubeconfig}")
     #cmd = ["kubectl", "logs", "-n", namespace, pod_name, "--tail", str(LOG_LINES_LIMIT)]
     cmd = ["kubectl", "logs", "-n", namespace, "deployment/" + namespace, "--tail", str(LOG_LINES_LIMIT)]
+    #cmd = ["kubectl", "logs", "-n", namespace, "deployment/" + namespace, "--since", "1m"]
     
     # Add context if specified
     if context and not kubeconfig:
