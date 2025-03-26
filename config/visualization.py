@@ -155,10 +155,10 @@ PHYSICS_CONFIG = {
     "barnes_hut": {
         "gravity": -1000,
         "central_gravity": 0.3,
-        "spring_length": 100,
-        "spring_strength": 0.01,
+        "spring_length": 80,
+        "spring_strength": 0.05,
         "damping": 0.09,
-        "avoid_overlap": 1.2,
+        "avoid_overlap": 1.0,
     },
     
     # Stabilization settings

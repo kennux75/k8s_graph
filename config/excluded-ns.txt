@@ -17,3 +17,4 @@ teleport-kube-agent
 wiz-kubernetes-integration
 api-right-test
 goldilocks
+external-dns
