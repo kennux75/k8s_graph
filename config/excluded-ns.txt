@@ -16,3 +16,4 @@ authent
 teleport-kube-agent
 wiz-kubernetes-integration
 api-right-test
+goldilocks
