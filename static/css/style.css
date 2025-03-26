@@ -112,6 +112,10 @@ body {
     background-color: #27ae60;
 }
 
+.action-button.active:hover {
+    background-color: #219a52;
+}
+
 .action-button i {
     margin-right: 5px;
     width: 16px;
