@@ -279,4 +279,39 @@ Si vous rencontrez des problèmes:
 
 This tool uses multithreading to significantly improve log collection and parsing performance, especially for clusters with many namespaces.
 
-For details on the multithreading implementation and tuning options, see [Multithreading Documentation](docs/multithreading.md). 
+For details on the multithreading implementation and tuning options, see [Multithreading Documentation](docs/multithreading.md).
+
+## Database Setup
+
+The application uses MariaDB to store node error counts. To set up the database:
+
+1. Install MariaDB if not already installed:
+   ```bash
+   # On macOS with Homebrew
+   brew install mariadb
+   
+   # On Ubuntu/Debian
+   sudo apt-get install mariadb-server
+   ```
+
+2. Start the MariaDB service:
+   ```bash
+   # On macOS
+   brew services start mariadb
+   
+   # On Ubuntu/Debian
+   sudo systemctl start mariadb
+   ```
+
+3. Configure the database connection:
+   - Edit `config/database.py` to set your database credentials:
+     ```python
+     DB_CONFIG = {
+         'host': 'localhost',
+         'user': 'your_username',
+         'password': 'your_password',
+         'database': 'k8s_graph'
+     }
+     ```
+
+4. The database and tables will be automatically created when you first run the application.

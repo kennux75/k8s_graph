@@ -22,8 +22,9 @@ from libs.graph.communication_graph import set_logger as set_graph_logger
 from libs.parsing.kubernetes import set_logger as set_kubernetes_logger
 from libs.parsing.logs import set_logger as set_logs_logger
 from libs.graph.graph_builder import set_logger as set_graph_builder_logger
-from libs.visualization.tooltip_manager import set_logger as set_tooltip_logger
+from libs.visualization.tooltip_manager import set_logger as set_tooltip_logger, set_database_manager
 from libs.webapp.app_controller import create_app, init_app, run_app
+from libs.database.db_manager import DatabaseManager, set_logger as set_db_logger
 
 if __name__ == '__main__':
     # Set up argument parser
@@ -45,10 +46,17 @@ if __name__ == '__main__':
     set_logs_logger(logger)
     set_graph_builder_logger(logger)
     set_tooltip_logger(logger)
+    set_db_logger(logger)  # Set logger for database manager
+    
+    # Initialize database manager
+    db_manager = DatabaseManager()
+    
+    # Set database manager for tooltip manager
+    set_database_manager(db_manager)
     
     # Create and initialize the Flask app
     app, socketio = create_app()
     app, socketio = init_app(app, socketio, logger)
     
     # Run the application
-    run_app(app, socketio) 
+    run_app(app, socketio)

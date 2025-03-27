@@ -6,9 +6,13 @@ It provides consistent formatting and handles various data sources for tooltip c
 """
 
 import logging
+from libs.database.db_manager import DatabaseManager
 
 # Initialize logger
 logger = logging.getLogger(__name__)
+
+# Initialize database manager
+db_manager = None
 
 def format_http_host_tooltip(http_hosts_data):
     """
@@ -42,6 +46,15 @@ def generate_node_tooltip(node_id, http_host_counts, edge_count, pod_count, cont
     Returns:
         str: Formatted tooltip text
     """
+    # Get error count and requests from database
+    error_count = 0
+    error_requests = []
+    if db_manager:
+        try:
+            error_count, error_requests = db_manager.get_node_errors(node_id)
+        except Exception as e:
+            logger.error(f"Error getting node errors from database: {e}")
+    
     # Build HTTP host tooltip section
     http_host_tooltip = ""
     if node_id in http_host_counts:
@@ -52,9 +65,20 @@ def generate_node_tooltip(node_id, http_host_counts, edge_count, pod_count, cont
     if context:
         node_title = f"{node_id} - {context}"
     
+    # Build error requests section
+    error_requests_section = ""
+    if error_requests:
+        error_requests_section = "\n\n5xx Error Details:"
+        for i, request in enumerate(error_requests[:5], 1):  # Show only top 5 errors
+            error_requests_section += f"\n{i}. [{request['time']}] {request['status']} - {request['request']}"
+            if request.get('error'):
+                error_requests_section += f"\n   Error: {request['error']}"
+    
     # Construct the complete tooltip
     title = (
         f"{node_title}\n\n"
+        f"Total 5xx Errors: {error_count}"
+        f"{error_requests_section}\n\n"
         f"Top HTTP Hosts with Origin:\n{http_host_tooltip or 'No HTTP host data available'}\n\n"
         f"Nombre d'arêtes: {edge_count}\nNombre de pods: {pod_count}"
     )
@@ -198,4 +222,14 @@ def set_logger(log_instance):
         log_instance: Logger instance
     """
     global logger
-    logger = log_instance 
+    logger = log_instance
+
+def set_database_manager(db_instance):
+    """
+    Sets the database manager for this module.
+    
+    Args:
+        db_instance: DatabaseManager instance
+    """
+    global db_manager
+    db_manager = db_instance

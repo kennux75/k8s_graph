@@ -11,4 +11,5 @@ apscheduler>=3.9.0
 eventlet>=0.33.0
 python-socketio>=5.1.0
 werkzeug>=2.0.0
-futures>=3.1.1; python_version < "3.0"  # For Python 2 compatibility 
+futures>=3.1.1; python_version < "3.0"  # For Python 2 compatibility
+mysql-connector-python>=8.0.0

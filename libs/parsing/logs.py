@@ -62,6 +62,7 @@ def parse_logs(logs, namespace, http_host_counts, namespaces_list, pods_with_ips
             request = extract_field_from_json_line(log_entry, "request")
             http_host = extract_field_from_json_line(log_entry, "http_host")
             status_code = extract_field_from_json_line(log_entry, "status")
+            response_time = extract_field_from_json_line(log_entry, "response_time")
 
             remoteaddr_parsed_match = re.search(r'(\d+\.\d+\.\d+\.\d+)$', remoteaddr)
             #logger.debug(f"for ns {namespace} remoteaddr: {remoteaddr} -> remoteaddr_parsed_match: {remoteaddr_parsed_match}")
@@ -172,16 +173,16 @@ def parse_logs(logs, namespace, http_host_counts, namespaces_list, pods_with_ips
                         logger.debug(f"4xx error detected for namespace {namespace} from auth {auth_value} with http_host {http_host} - setting count to {http_host_counts[namespace][(http_host, auth_value)]['4xx']}")
                     elif re.match(r'^5\d{2}$', status_code_str):  # Matches 5xx
                         http_host_counts[namespace][(http_host, auth_value)]['5xx'] += 1
-                        # Store the log entry for 5xx errors
-                        # log_details = {
-                        #     'status': status_code,
-                        #     'request': extract_field_from_json_line(log_entry, "request"),
-                        #     'time': extract_field_from_json_line(log_entry, "time_local"),
-                        #     'error': extract_field_from_json_line(log_entry, "error")
-                        # }
-                        #http_host_counts[namespace][(http_host, auth_value)]['5xx_entries'].append(log_details)
-                        http_host_counts[namespace][(http_host, auth_value)]['5xx_entries'].append(log_entry)
+                        # Store the log entry for 5xx errors with specific fields
+                        log_details = {
+                            'status': status_code,
+                            'request': request,
+                            'time': extract_field_from_json_line(log_entry, "time_local"),
+                            'error': extract_field_from_json_line(log_entry, "error")
+                        }
+                        http_host_counts[namespace][(http_host, auth_value)]['5xx_entries'].append(log_details)
                         logger.debug(f"5xx error detected in namespace {namespace} from auth {auth_value} with http_host {http_host} - setting count to {http_host_counts[namespace][(http_host, auth_value)]['5xx']}")
+                        logger.debug(f"Stored 5xx error details: {log_details}")
                     elif re.match(r'^3\d{2}$', status_code_str):  # Matches 3xx
                         http_host_counts[namespace][(http_host, auth_value)]['3xx'] += 1
                     elif re.match(r'^2\d{2}$', status_code_str):  # Matches 2xx
