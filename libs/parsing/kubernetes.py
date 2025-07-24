@@ -97,21 +97,8 @@ def find_web_pod_in_namespace(context, namespace, kubeconfig=None, pods_with_ips
     Returns:
         str: Name of the first web pod found, or None if none found
     """
-    logger.info(f"Looking for web pods in namespace {namespace} in context {context}...")
-    cmd = ["kubectl", "get", "pods", "-n", namespace, "-o", "json"]
-    
-    # Add context if specified
-    #if context and not kubeconfig:
-    #    cmd.insert(1, "--context")
-    #    cmd.insert(2, context)
-    if kubeconfig:
-        cmd.insert(1, "--kubeconfig")
-        cmd.insert(2, kubeconfig)
-        
+    logger.info("Looking for web pods in namespace %s in context %s", namespace, context)
     try:
-        #result = subprocess.run(cmd, capture_output=True, text=True, check=True)
-        #pods_data = json.loads(result.stdout)
-        #pods_data = pods_with_ips[namespace]
         
         # Look for pods with typical web server container names or ports
         for pod_name, pod_info in pods_with_ips[namespace].items():
@@ -142,64 +129,48 @@ def find_web_pod_in_namespace(context, namespace, kubeconfig=None, pods_with_ips
         else:
             logger.warning(f"In context {context}, no pods found in namespace {namespace}")
             return None
-    except subprocess.CalledProcessError as e:
-        logger.error(f"In context {context}, error getting pods in namespace {namespace}: {e}")
-        return None
-    except json.JSONDecodeError as e:
-        logger.error(f"In context {context}, error parsing pod data for namespace {namespace}: {e}")
+    except Exception as e:
+        logger.error("In context %s, error processing pod data for namespace %s: %s", context, namespace, e)
         return None
 
 def get_all_pods_with_ips_in_namespaces(excluded_namespaces, contexts=None):
-    """Get all pods and their IP addresses in a namespace.
-    
-    Args:
-        context (str): The Kubernetes context
-        namespace (str): The namespace to retrieve pods from
-        kubeconfig (str, optional): Path to the kubeconfig file
-        
-    Returns:
-        dict: A dictionary with pod names as keys and their IP addresses as values
-    """
-    pods_with_ips = {}
+    """Return a dict namespace -> {pod_name: {ip, port}} across *contexts* using KubeClient."""
+    pods_with_ips: dict[str, dict[str, dict[str, str | int | None]]] = {}
+
     for context in contexts:
         kubeconfig = load_kube_config(context)
+        client = KubeClient(context=context, kubeconfig=kubeconfig)
+
         ns_in_context = get_namespaces(context, excluded_namespaces, kubeconfig)
 
         for namespace in ns_in_context:
-            logger.debug(f"Retrieving pods and their IPs from namespace {namespace} in context {context} with kubeconfig {kubeconfig}")
-            pods_with_ips[namespace] = {}
-            cmd = ["kubectl", "get", "pods", "-n", namespace, "-o", "json"]
-            
-            if kubeconfig:
-                cmd.insert(1, "--kubeconfig")
-                cmd.insert(2, kubeconfig)
-        
             try:
-                result = subprocess.run(cmd, capture_output=True, text=True, check=True)
-                pods_data = json.loads(result.stdout)
-        
+                logger.debug(
+                    "Retrieving pods and their IPs from namespace %s in context %s", namespace, context
+                )
+                pods_with_ips.setdefault(namespace, {})
+
+                pods_data = client.get_pods_json(namespace)
+
                 for pod in pods_data["items"]:
-                    namespace = pod["metadata"]["namespace"]
                     pod_name = pod["metadata"]["name"]
                     pod_ip = pod["status"].get("podIP")
-                    
-                    # Check if the pod has containers and if the first container has ports
-                    if "containers" in pod["spec"] and pod["spec"]["containers"]:
-                        container = pod["spec"]["containers"][0]
-                        if "ports" in container and container["ports"]:
-                            pod_port = container["ports"][0].get("containerPort")
-                        else:
-                            pod_port = None  # Set to None if no ports are defined
-                    else:
-                        pod_port = None  # Set to None if no containers are defined
-                    
+
+                    # First container -> first port as heuristic
+                    pod_port = None
+                    containers = pod["spec"].get("containers", [])
+                    if containers and containers[0].get("ports"):
+                        pod_port = containers[0]["ports"][0].get("containerPort")
+
                     pods_with_ips[namespace][pod_name] = {"ip": pod_ip, "port": pod_port}
-            
-                logger.debug(f"Found {len(pods_with_ips[namespace])} pods with IPs in namespace {namespace}")
-            except subprocess.CalledProcessError as e:
-                logger.error(f"Error retrieving pods in namespace {namespace} in context {context}: {e}")
-            except json.JSONDecodeError as e:
-                logger.error(f"Error parsing pod data for namespace {namespace} in context {context}: {e}")
+
+                logger.debug(
+                    "Found %d pods with IPs in namespace %s", len(pods_with_ips[namespace]), namespace
+                )
+            except Exception as e:
+                logger.error(
+                    "Error retrieving pods in namespace %s in context %s: %s", namespace, context, e
+                )
 
     return pods_with_ips
 

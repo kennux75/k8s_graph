@@ -13,6 +13,7 @@ from libs.common.logging_utils import get_logger
 import subprocess
 from collections import defaultdict
 from config.constants import LOG_LINES_LIMIT
+from libs.parsing.kube_client import KubeClient
 
 # Logger
 logger = get_logger(__name__)
@@ -258,27 +259,17 @@ def extract_logs(context, namespace, pod_name, kubeconfig=None):
         str: The logs from the pod
     """
     logger.info(f"Extracting logs from pod {pod_name} in namespace {namespace} in context {context} with kubeconfig: {kubeconfig}")
-    #cmd = ["kubectl", "logs", "-n", namespace, pod_name, "--tail", str(LOG_LINES_LIMIT)]
-    cmd = ["kubectl", "logs", "-n", namespace, "deployment/" + namespace, "--tail", str(LOG_LINES_LIMIT)]
-    #cmd = ["kubectl", "logs", "-n", namespace, "deployment/" + namespace, "--since", "1m"]
-    
-    # Add context if specified
-    if context and not kubeconfig:
-        cmd.insert(1, "--context")
-        cmd.insert(2, context)
-    elif kubeconfig:
-        cmd.insert(1, "--kubeconfig")
-        cmd.insert(2, kubeconfig)
-        
+    client = KubeClient(context=context, kubeconfig=kubeconfig)
+    target = f"deployment/{namespace}"
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
-        log_lines = result.stdout.strip().split('\n')
-        valid_lines = [line for line in log_lines if line.strip()]
-        logger.debug(f"In context {context}, extracted {len(valid_lines)} log lines from {pod_name}")
-        return result.stdout
-    except subprocess.CalledProcessError as e:
-        logger.error(f"In context {context}, error extracting logs from pod {pod_name}: {e}")
-        logger.debug(f"Command output: {e.stdout}\n{e.stderr}")
+        logs = client.get_logs(namespace, target, tail=LOG_LINES_LIMIT)
+        valid_lines = [line for line in logs.strip().split("\n") if line.strip()]
+        logger.debug(
+            "In context %s, extracted %d log lines from %s", context, len(valid_lines), pod_name
+        )
+        return logs
+    except Exception as e:
+        logger.error("In context %s, error extracting logs from pod %s: %s", context, pod_name, e)
         return ""
 
 def set_logger(log_instance):
