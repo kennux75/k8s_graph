@@ -32,11 +32,19 @@ def get_logger(name: Optional[str] = None,
     """
     logger = logging.getLogger(name)
 
-    if logger.handlers:
-        # Logger already configured – simply ensure its level and return.
+    root_logger = logging.getLogger()
+
+    # Child logger: never add handlers, rely on ancestor.
+    if name is not None:
         logger.setLevel(level)
         return logger
 
+    # Root logger: configure if not already done.
+    if root_logger.handlers:
+        root_logger.setLevel(level)
+        return root_logger
+
+    # Configure root handlers (first invocation).
     logger.setLevel(level)
 
     formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
@@ -50,7 +58,6 @@ def get_logger(name: Optional[str] = None,
         file_handler.setFormatter(formatter)
         logger.addHandler(file_handler)
     except (PermissionError, OSError):
-        # Fallback gracefully if the file cannot be written.
         logger.warning("Unable to write log file %s – continuing with stream handler only", logfile)
 
     return logger 
