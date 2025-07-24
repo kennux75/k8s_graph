@@ -10,6 +10,7 @@ import subprocess
 import os
 from libs.common.logging_utils import get_logger
 from config.constants import EXCLUDED_NS_FILE, KUBE_CONTEXTS_FILE, KUBE_CONFIG_DIR
+from libs.parsing.kube_client import KubeClient
 
 # Logger
 logger = get_logger(__name__)
@@ -63,79 +64,25 @@ def load_excluded_namespaces():
     return excluded_ns
 
 def get_namespaces(context, excluded_namespaces, kubeconfig=None):
-    """Get all namespaces in the cluster except excluded ones.
-    
-    Args:
-        context (str): The Kubernetes context
-        excluded_namespaces (list): List of namespaces to exclude
-        kubeconfig (str, optional): Path to the kubeconfig file
-        
-    Returns:
-        list: List of namespace names
-    """
-    logger.info(f"Retrieving namespaces from cluster with context {context}...")
-    all_namespaces = []
-    
-    if not context:
-        logger.warning("No Kubernetes context found. Cannot retrieve namespaces.")
-        return all_namespaces
-
-    cmd = ["kubectl", "get", "namespaces", "-o", "json"]
-    
-    # Add context if specified
-    #if context and not kubeconfig:
-    #    cmd.insert(1, "--context")
-    #    cmd.insert(2, context)
-    if kubeconfig:
-        cmd.insert(1, "--kubeconfig")
-        cmd.insert(2, kubeconfig)
-
+    """Get all namespaces in the cluster except excluded ones using KubeClient."""
+    client = KubeClient(context=context, kubeconfig=kubeconfig)
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
-        namespaces_data = json.loads(result.stdout)
-            
-        for ns in namespaces_data["items"]:
-            namespace = ns["metadata"]["name"]
-            if namespace not in excluded_namespaces:
-                all_namespaces.append(namespace)
-            
-        logger.info(f"Found {len(all_namespaces)} non-excluded namespaces in context {context}")
-        logger.debug(f"Namespaces: {', '.join(all_namespaces)}")
-    except subprocess.CalledProcessError as e:
-        logger.error(f"Error executing kubectl command in context {context}: {e}")
-        logger.debug(f"Command output: {e.stdout}\n{e.stderr}")
-    except json.JSONDecodeError as e:
-        logger.error(f"Error parsing kubectl output in context {context}: {e}")
-
-    return all_namespaces
+        namespaces = client.get_namespaces(excluded=list(excluded_namespaces))
+        logger.info(f"Found {len(namespaces)} non-excluded namespaces in context {context}")
+        logger.debug(f"Namespaces: {', '.join(namespaces)}")
+        return namespaces
+    except Exception as e:
+        logger.error(f"Error retrieving namespaces in context {context}: {e}")
+        return []
 
 def count_pods_in_namespace(context, namespace, kubeconfig=None):
-    """Count the number of pods in a namespace.
-    
-    Args:
-        context (str): The Kubernetes context
-        namespace (str): The namespace to count pods in
-        kubeconfig (str, optional): Path to the kubeconfig file
-        
-    Returns:
-        int: Number of pods in the namespace
-    """
-    cmd = ["kubectl", "get", "pods", "-n", namespace, "--no-headers"]
-    
-    # Add context if specified
-    #if context and not kubeconfig:
-    #    cmd.insert(1, "--context")
-    #    cmd.insert(2, context)
-    if kubeconfig:
-        cmd.insert(1, "--kubeconfig")
-        cmd.insert(2, kubeconfig)
-        
+    """Count pods via KubeClient."""
+    client = KubeClient(context=context, kubeconfig=kubeconfig)
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
-        pod_count = len(result.stdout.strip().split('\n')) if result.stdout.strip() else 0
+        pod_count = client.count_pods(namespace)
         logger.debug(f"In context {context}, namespace {namespace} has {pod_count} pods")
         return pod_count
-    except subprocess.CalledProcessError as e:
+    except Exception as e:
         logger.warning(f"Error counting pods in namespace {namespace} in context {context}: {e}")
         return 0
 
