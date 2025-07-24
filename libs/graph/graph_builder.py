@@ -56,9 +56,4 @@ def create_simplified_graph(graph, node_to_namespace, node_to_context=None):
         simplified_graph.add_edge(source_ns, target_ns, weight=weight)
         logger.debug(f"Added namespace edge: {source_ns} -> {target_ns} with weight {weight}")
     
-    return simplified_graph
-
-def set_logger(log_instance):
-    """Set the global logger."""
-    global logger
-    logger = log_instance 
+    return simplified_graph 

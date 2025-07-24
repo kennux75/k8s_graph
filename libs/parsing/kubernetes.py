@@ -172,9 +172,4 @@ def get_all_pods_with_ips_in_namespaces(excluded_namespaces, contexts=None):
                     "Error retrieving pods in namespace %s in context %s: %s", namespace, context, e
                 )
 
-    return pods_with_ips
-
-def set_logger(log_instance):
-    """Set the global logger."""
-    global logger
-    logger = log_instance     
+    return pods_with_ips 

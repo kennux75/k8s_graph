@@ -214,16 +214,6 @@ def remove_cumulative_data(tooltip_text):
         return base_tooltip + "\n\n" + five_xx_examples
     return base_tooltip
 
-def set_logger(log_instance):
-    """
-    Sets the logger for this module.
-    
-    Args:
-        log_instance: Logger instance
-    """
-    global logger
-    logger = log_instance
-
 def set_database_manager(db_instance):
     """
     Sets the database manager for this module.

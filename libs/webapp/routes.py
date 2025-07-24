@@ -159,9 +159,4 @@ def init_routes(flask_app, socketio_instance):
             return jsonify({'status': 'success', 'message': f'Interval updated to {new_interval} seconds'})
         except Exception as e:
             logger.error(f"Error updating interval: {e}", exc_info=True)
-            return jsonify({'status': 'error', 'message': str(e)}), 500
-
-def set_logger(log_instance):
-    """Set the logger for this module"""
-    global logger
-    logger = log_instance 
+            return jsonify({'status': 'error', 'message': str(e)}), 500 

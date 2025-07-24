@@ -312,8 +312,3 @@ class DatabaseManager:
         except Error as e:
             logger.error(f"Error getting edge weight: {e}")
             return 0
-
-def set_logger(log_instance):
-    """Set the global logger."""
-    global logger
-    logger = log_instance

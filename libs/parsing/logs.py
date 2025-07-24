@@ -270,9 +270,4 @@ def extract_logs(context, namespace, pod_name, kubeconfig=None):
         return logs
     except Exception as e:
         logger.error("In context %s, error extracting logs from pod %s: %s", context, pod_name, e)
-        return ""
-
-def set_logger(log_instance):
-    """Set the global logger."""
-    global logger
-    logger = log_instance 
+        return "" 

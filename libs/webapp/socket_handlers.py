@@ -54,9 +54,4 @@ def init_socket_handlers(socketio_instance):
         # Build new graph data in a separate thread
         thread = threading.Thread(target=build_graph_data)
         thread.daemon = True
-        thread.start()
-
-def set_logger(log_instance):
-    """Set the logger for this module"""
-    global logger
-    logger = log_instance 
+        thread.start() 

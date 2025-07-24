@@ -32,9 +32,4 @@ def convert_dict_for_json(data):
         return [convert_dict_for_json(item) for item in data]
     else:
         # Return other types unchanged
-        return data
-
-def set_logger(log_instance):
-    """Set the logger for this module"""
-    global logger
-    logger = log_instance 
+        return data 

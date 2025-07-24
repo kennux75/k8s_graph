@@ -214,9 +214,4 @@ def generate_test_graph():
         return {"status": "success", "message": "Test graph generated"}
     except Exception as e:
         logger.error(f"Error generating test graph: {e}", exc_info=True)
-        return {"status": "error", "message": str(e)}
-
-def set_logger(log_instance):
-    """Set the logger for this module"""
-    global logger
-    logger = log_instance 
+        return {"status": "error", "message": str(e)} 
