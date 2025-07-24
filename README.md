@@ -12,6 +12,16 @@ This tool visualizes the communication patterns between namespaces in a Kubernet
 - **Multithreaded Processing**: Parallel log collection and parsing for improved performance
 - **Customizable**: Adjust refresh rates, physics parameters, and threading settings to suit your needs
 
+## Architecture Overview
+
+The codebase est désormais organisé autour des principes suivants :
+
+1. **Logging centralisé** : un utilitaire unique `libs/common/logging_utils.py` configure le logger racine ; les modules récupèrent leur logger via `get_logger(__name__)`.
+2. **Couche d’accès Kubernetes** : toutes les interactions `kubectl` passent par le wrapper `libs/parsing/kube_client.py` (singleton par `(context, kubeconfig)`), ce qui facilite les tests et évite la création répétée de sous-processus.
+3. **Couche Repository pour MySQL** : la logique SQL brute est isolée dans `libs/database/repositories.py`. `DatabaseManager` délègue aux repositories, ce qui réduit la duplication et prépare l’introduction d’un ORM ou d’un pool de connexions.
+4. **WebApp** : la partie Flask/SocketIO vit dans `libs/webapp/` ; la logique de graph visuel dans `libs/graph/`.
+5. **Front-end** : les sources JS se trouvent dans `static/js/modules/`. Les fichiers de sauvegarde ont été retirés ; un futur bundler (esbuild/Vite) pourra regrouper ces modules.
+
 ## Installation
 
 1. Clone this repository:
