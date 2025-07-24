@@ -279,7 +279,7 @@ Si vous rencontrez des problèmes:
 
 This tool uses multithreading to significantly improve log collection and parsing performance, especially for clusters with many namespaces.
 
-For details on the multithreading implementation and tuning options, see [Multithreading Documentation](docs/multithreading.md).
+For details on the multithreading implementation and tuning options, see [Multithreading Documentation](docs/multithreading.md). 
 
 ## Database Setup
 

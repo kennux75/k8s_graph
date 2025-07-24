@@ -16,7 +16,6 @@ import argparse  # Importer argparse pour gérer les arguments de la ligne de co
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '.')))
 
 # Import our modules
-from config.constants import KUBE_CONTEXT
 from libs.logging import setup_logging
 from libs.graph.communication_graph import set_logger as set_graph_logger
 from libs.parsing.kubernetes import set_logger as set_kubernetes_logger

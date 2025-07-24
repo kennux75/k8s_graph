@@ -1,0 +1,63 @@
+# 1. Namespace
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: rwz-k8s-graph
+
+---
+
+# 2. Secret pour le mot de passe root
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mariadb-secret
+  namespace: rwz-k8s-graph
+type: Opaque
+data:
+  mariadb-root-password: TjB0VGhhdFNlY3IzdA==
+
+---
+
+# 3. PersistentVolumeClaim
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mariadb-pvc
+  namespace: rwz-k8s-graph
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+
+---
+
+# 4. Pod MariaDB
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mariadb
+  namespace: rwz-k8s-graph
+  labels:
+    app: mariadb
+spec:
+  containers:
+    - name: mariadb
+      image: mariadb:11
+      ports:
+        - containerPort: 3306
+      env:
+        - name: MARIADB_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mariadb-secret
+              key: mariadb-root-password
+      volumeMounts:
+        - mountPath: /var/lib/mysql
+          name: mariadb-storage
+  volumes:
+    - name: mariadb-storage
+      persistentVolumeClaim:
+        claimName: mariadb-pvc
+

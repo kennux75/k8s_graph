@@ -1,0 +1,39 @@
+Status,Action,File,Type,Priority,Complexity,Current State,Target State,Tests to Update,Rollback Strategy
+DONE,CREATE,static/js/modules/feature-flags.js,New,HIGH,Low,Created,Feature flag management system with localStorage persistence and event system,None,Delete file - [RESULT] Successfully created comprehensive feature flags system with FeatureFlagsManager class
+DONE,MODIFY,config/app_config.py,Update,HIGH,Low,Updated,Add FEATURES dict with feature flags and utility functions,Unit tests,Remove FEATURES dict - [RESULT] Added FEATURES configuration and helper functions
+DONE,CREATE,static/js/modules/focus-mode.js,New,HIGH,Medium,Created,FocusMode class with comprehensive focus functionality including neighbors and path finding,Unit tests for FocusMode,Delete file and restore filters.js - [RESULT] Complete focus mode implementation with event handling and multiple focus types
+DONE,MODIFY,static/js/modules/filters.js,Refactor,HIGH,High,Modified,Add applyFocusFilters() with conditional logic and feature flag integration,Regression tests for filtering,Restore original applyNodeFilters() function - [RESULT] Added focus mode delegation and applyFocusFilters function
+DONE,MODIFY,static/js/modules/state.js,Update,HIGH,Low,Updated,Add focusMode nodeGroups and filtering state variables,Unit tests,Remove new state variables - [RESULT] Added focusMode nodeGroups and originalFilteredNodes state objects
+DONE,MODIFY,static/js/modules/network.js,Update,HIGH,Medium,Updated,Enhanced auto-refresh to preserve filtered view state,Integration tests,Remove filtered refresh logic - [RESULT] Added intelligent refresh that maintains filtered view during auto-updates
+DONE,MODIFY,templates/index.html,Update,HIGH,Medium,Updated,Add focus-mode-section panel HTML with complete UI controls,Integration tests,Remove focus-mode-section panel - [RESULT] Added comprehensive focus mode panel with controls, settings, and instructions
+DONE,MODIFY,static/css/style.css,Update,HIGH,Low,Updated,Add focus mode styles and transitions with cohesive design,Visual tests,Remove focus mode CSS rules - [RESULT] Added complete focus mode styling matching existing theme
+DONE,MODIFY,static/js/modules/ui.js,Update,HIGH,Medium,Updated,Enhanced select filtered functionality with communications and refresh preservation,Integration tests,Remove enhanced filtering logic - [RESULT] Added filtered graph API integration with restore functionality and refresh state preservation
+TODO,CREATE,static/js/modules/local-storage.js,New,MEDIUM,Low,Non-existent,LocalStorage utility functions,Unit tests,Delete file
+TODO,CREATE,static/js/modules/node-groups.js,New,MEDIUM,Medium,Non-existent,NodeGroupManager class for CRUD operations,Unit tests for NodeGroupManager,Delete file
+TODO,MODIFY,templates/index.html,Update,MEDIUM,Medium,Focus mode panel only,Add node-groups-section panel HTML,Integration tests,Remove node-groups-section panel
+TODO,MODIFY,static/css/style.css,Update,MEDIUM,Low,Focus mode styles only,Add node groups styles,Visual tests,Remove node groups CSS rules
+TODO,MODIFY,static/js/modules/ui.js,Update,MEDIUM,Medium,Focus mode handlers only,Add node groups event handlers,Integration tests,Remove node groups handlers
+TODO,CREATE,libs/analysis/__init__.py,New,MEDIUM,Low,Non-existent,Empty __init__.py for analysis package,None,Delete directory
+TODO,CREATE,libs/analysis/node_analyzer.py,New,MEDIUM,High,Non-existent,NodeAnalyzer class with analysis methods,Unit tests for NodeAnalyzer,Delete file
+TODO,CREATE,libs/analysis/metrics_calculator.py,New,MEDIUM,Medium,Non-existent,MetricsCalculator utility functions,Unit tests for metrics,Delete file
+TODO,MODIFY,libs/webapp/routes.py,Update,MEDIUM,Medium,Current REST endpoints,Add /api/node-analysis/<node_id> endpoint,API tests,Remove new endpoints
+TODO,MODIFY,libs/webapp/routes.py,Update,MEDIUM,Medium,node-analysis endpoint only,Add /api/node-groups CRUD endpoints,API tests,Remove node-groups endpoints
+TODO,MODIFY,libs/database/db_manager.py,Update,MEDIUM,Medium,Current query methods,Add get_node_analysis and related methods,Database tests,Remove new methods
+TODO,CREATE,static/js/modules/node-analysis.js,New,MEDIUM,High,Non-existent,NodeAnalysisPanel class with analysis UI,Unit tests for analysis panel,Delete file
+TODO,MODIFY,templates/index.html,Update,MEDIUM,Medium,Focus and groups panels,Add node-analysis-section panel HTML,Integration tests,Remove node-analysis-section panel
+TODO,MODIFY,static/css/style.css,Update,MEDIUM,Low,Focus and groups styles,Add node analysis styles,Visual tests,Remove node analysis CSS rules
+TODO,MODIFY,static/js/modules/ui.js,Update,MEDIUM,Medium,Focus and groups handlers,Add node analysis event handlers,Integration tests,Remove node analysis handlers
+TODO,MODIFY,static/js/modules/network.js,Update,LOW,Medium,Current updateGraph function,Add support for focus mode visualization,Integration tests,Restore original updateGraph
+TODO,MODIFY,libs/webapp/graph_manager.py,Update,LOW,Medium,Current build_graph_data function,Add focus mode support and caching,Unit tests,Restore original build_graph_data
+TODO,CREATE,static/js/modules/metrics-cache.js,New,LOW,Low,Non-existent,MetricsCache class for performance,Unit tests for cache,Delete file
+TODO,MODIFY,static/js/modules/main.js,Update,LOW,Low,Current module imports,Add imports for new modules,Integration tests,Remove new imports
+TESTING,CREATE,tests/js/test-focus-mode.js,New,HIGH,Medium,Non-existent,Unit tests for focus mode functionality,None,Delete file
+TESTING,CREATE,tests/js/test-node-groups.js,New,MEDIUM,Medium,Non-existent,Unit tests for node groups functionality,None,Delete file
+TESTING,CREATE,tests/js/test-node-analysis.js,New,MEDIUM,Medium,Non-existent,Unit tests for node analysis functionality,None,Delete file
+TESTING,CREATE,tests/python/test_node_analyzer.py,New,MEDIUM,Medium,Non-existent,Unit tests for NodeAnalyzer class,None,Delete file
+TESTING,CREATE,tests/integration/test_focus_mode_api.py,New,HIGH,High,Non-existent,Integration tests for focus mode with API,None,Delete file
+TESTING,MODIFY,tests/js/test-filters.js,Update,HIGH,High,Current filter tests,Add regression tests for focus mode filtering,None,Restore original tests
+DOCS,CREATE,docs/focus-mode-guide.md,New,LOW,Low,Non-existent,User guide for focus mode,None,Delete file
+DOCS,CREATE,docs/node-groups-guide.md,New,LOW,Low,Non-existent,User guide for node groups,None,Delete file
+DOCS,CREATE,docs/node-analysis-guide.md,New,LOW,Low,Non-existent,User guide for node analysis,None,Delete file
+DOCS,MODIFY,README.md,Update,LOW,Low,Current feature list,Add new features documentation,None,Remove new features section 

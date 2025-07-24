@@ -7,7 +7,7 @@ Kubernetes-related functions for Kubernetes Communications Graph Visualizer
 
 import json
 import subprocess
-from config.constants import EXCLUDED_NS_FILE, KUBE_CONTEXT, KUBE_CONTEXTS_FILE, KUBE_CONFIG_DIR
+from config.constants import EXCLUDED_NS_FILE, KUBE_CONTEXTS_FILE, KUBE_CONFIG_DIR
 
 # Global logger (will be set by the main script)
 logger = None
