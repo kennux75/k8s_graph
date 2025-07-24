@@ -10,6 +10,7 @@ from mysql.connector import Error
 import json
 import time
 from config.database import DB_CONFIG, NODE_ERRORS_TABLE, ERROR_REQUEST_SCHEMA, NODE_COMMUNICATIONS_TABLE
+from libs.database.repositories import NodeErrorsRepository
 from libs.common.logging_utils import get_logger
 
 # Logger
@@ -46,166 +47,29 @@ class DatabaseManager:
 
             # Now connect with the database
             self.connection = mysql.connector.connect(**self.connection_params)
+            # Initialize repositories
+            self.node_errors_repo = NodeErrorsRepository(self.connection)
             logger.info("Database initialized successfully")
         except Error as e:
             logger.error(f"Error initializing database: {e}")
             raise
 
     def update_node_errors(self, node_id, error_count, error_requests=None):
-        """Update the error count and requests for a specific node.
-        
-        Args:
-            node_id (str): The identifier of the node
-            error_count (int): Number of 5xx errors
-            error_requests (list, optional): List of error request details
-        """
-        try:
-            cursor = self.connection.cursor()
-            
-            # Log the input data
-            logger.debug(f"Updating node {node_id} with error_count={error_count}")
-            logger.debug(f"Error requests to store: {error_requests}")
-            
-            # Convert error requests to JSON string if provided
-            error_requests_json = None
-            if error_requests:
-                # Add timestamp to each error request
-                for request in error_requests:
-                    if 'timestamp' not in request:
-                        request['timestamp'] = time.time()
-                error_requests_json = json.dumps(error_requests)
-                logger.debug(f"Converted error requests to JSON: {error_requests_json}")
-            
-            # Get current error requests if they exist
-            current_requests = []
-            if error_requests_json is None:
-                cursor.execute("SELECT error_requests FROM node_errors WHERE node_id = %s", (node_id,))
-                result = cursor.fetchone()
-                if result and result[0]:
-                    current_requests = json.loads(result[0])
-                    logger.debug(f"Retrieved current requests from database: {current_requests}")
-            
-            # Update or insert the record
-            query = """
-                INSERT INTO node_errors (node_id, error_count, error_requests)
-                VALUES (%s, %s, %s)
-                ON DUPLICATE KEY UPDATE 
-                    error_count = %s,
-                    error_requests = %s
-            """
-            logger.debug(f"Executing query: {query}")
-            logger.debug(f"Parameters: node_id={node_id}, error_count={error_count}, error_requests={error_requests_json}")
-            
-            cursor.execute(query, (node_id, error_count, error_requests_json, 
-                                 error_count, error_requests_json))
-            self.connection.commit()
-            cursor.close()
-            
-            # Verify the update
-            verify_cursor = self.connection.cursor()
-            verify_cursor.execute("SELECT error_count, error_requests FROM node_errors WHERE node_id = %s", (node_id,))
-            verify_result = verify_cursor.fetchone()
-            verify_cursor.close()
-            
-            if verify_result:
-                logger.debug(f"Verified update - Stored error_count: {verify_result[0]}")
-                logger.debug(f"Verified update - Stored error_requests: {verify_result[1]}")
-            else:
-                logger.warning(f"Could not verify update for node {node_id}")
-                
-        except Error as e:
-            logger.error(f"Error updating node errors: {e}")
-            raise
+        """Delegate to NodeErrorsRepository.upsert_errors."""
+        # Add timestamp if missing
+        if error_requests:
+            for req in error_requests:
+                req.setdefault("timestamp", time.time())
+        self.node_errors_repo.upsert_errors(node_id, error_count, error_requests)
 
     def get_node_errors(self, node_id):
-        """Get the error count and requests for a specific node.
-        
-        Returns:
-            tuple: (error_count, error_requests)
-        """
-        try:
-            cursor = self.connection.cursor()
-            query = "SELECT error_count, error_requests FROM node_errors WHERE node_id = %s"
-            cursor.execute(query, (node_id,))
-            result = cursor.fetchone()
-            cursor.close()
-            
-            if result:
-                error_requests = json.loads(result[1]) if result[1] else []
-                return result[0], error_requests
-            return 0, []
-        except Error as e:
-            logger.error(f"Error getting node errors: {e}")
-            raise
+        return self.node_errors_repo.fetch_errors(node_id)
 
     def get_recent_errors(self, node_id, hours=1):
-        """Get errors that occurred in the last specified hours.
-        
-        Args:
-            node_id (str): The identifier of the node
-            hours (int): Number of hours to look back
-            
-        Returns:
-            tuple: (has_5xx, has_4xx) - Boolean flags indicating presence of errors
-        """
-        try:
-            cursor = self.connection.cursor()
-            query = "SELECT error_requests FROM node_errors WHERE node_id = %s"
-            cursor.execute(query, (node_id,))
-            result = cursor.fetchone()
-            cursor.close()
-            
-            if not result or not result[0]:
-                logger.debug(f"No error requests found for node {node_id}")
-                return False, False
-                
-            error_requests = json.loads(result[0])
-            cutoff_time = time.time() - (hours * 3600)  # Convert hours to seconds
-            
-            has_5xx = False
-            has_4xx = False
-            
-            logger.debug(f"Checking {len(error_requests)} error requests for node {node_id}")
-            for request in error_requests:
-                timestamp = request.get('timestamp', 0)
-                if timestamp >= cutoff_time:
-                    status = str(request.get('status', ''))
-                    logger.debug(f"Found recent error: status={status}, timestamp={timestamp}")
-                    if status.startswith('5'):
-                        has_5xx = True
-                        logger.debug(f"Found 5xx error for node {node_id}")
-                    elif status.startswith('4'):
-                        has_4xx = True
-                        logger.debug(f"Found 4xx error for node {node_id}")
-            
-            logger.debug(f"Node {node_id} status: has_5xx={has_5xx}, has_4xx={has_4xx}")
-            return has_5xx, has_4xx
-        except Error as e:
-            logger.error(f"Error getting recent errors: {e}")
-            return False, False
+        return self.node_errors_repo.fetch_recent_flags(node_id, hours)
 
     def get_all_node_errors(self):
-        """Get error counts and requests for all nodes.
-        
-        Returns:
-            dict: Dictionary mapping node_ids to (error_count, error_requests) tuples
-        """
-        try:
-            cursor = self.connection.cursor()
-            query = "SELECT node_id, error_count, error_requests FROM node_errors"
-            cursor.execute(query)
-            results = cursor.fetchall()
-            cursor.close()
-            
-            return {
-                row[0]: (
-                    row[1],
-                    json.loads(row[2]) if row[2] else []
-                ) for row in results
-            }
-        except Error as e:
-            logger.error(f"Error getting all node errors: {e}")
-            raise
+        return self.node_errors_repo.fetch_all()
 
     def close(self):
         """Close the database connection."""
