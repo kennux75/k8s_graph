@@ -7,13 +7,12 @@ Kubernetes-related functions for Kubernetes Communications Graph Visualizer
 
 import json
 import subprocess
+import os
+from libs.common.logging_utils import get_logger
 from config.constants import EXCLUDED_NS_FILE, KUBE_CONTEXTS_FILE, KUBE_CONFIG_DIR
 
 # Logger
 logger = get_logger(__name__)
-
-import os
-from libs.common.logging_utils import get_logger
 
 def load_kube_contexts(KUBE_CONTEXTS_FILE):
     """Load Kubernetes contexts from files in the specified config directory."""
