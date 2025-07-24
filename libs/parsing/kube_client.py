@@ -22,13 +22,33 @@ logger = get_logger(__name__)
 
 
 class KubeClient:
-    """Encapsulates interaction with a single Kubernetes context/kubeconfig."""
+    """Encapsulates interaction with a single Kubernetes context/kubeconfig.
+
+    To limiter les forks de process, la classe maintient un *cache* interne :
+    si un client pour (context, kubeconfig) existe déjà, le même objet est
+    retourné.
+    """
+
+    _instances: dict[tuple[str | None, str | None], "KubeClient"] = {}
+
+    def __new__(cls, context: Optional[str] = None, kubeconfig: Optional[str] = None):
+        key = (context, kubeconfig)
+        if key in cls._instances:
+            return cls._instances[key]
+        instance = super().__new__(cls)
+        cls._instances[key] = instance
+        return instance
 
     def __init__(self, context: Optional[str] = None, kubeconfig: Optional[str] = None):
+        # __init__ may be called multiple times due to singleton pattern;
+        # ensure idempotence.
+        if hasattr(self, "_initialised"):
+            return
         if not context and not kubeconfig:
             raise ValueError("Either context or kubeconfig must be provided to KubeClient")
         self.context = context
         self.kubeconfig = kubeconfig
+        self._initialised = True
 
     # ---------------------------------------------------------------------
     # Low-level helpers
@@ -71,4 +91,20 @@ class KubeClient:
 
     def get_pods_json(self, namespace: str) -> Dict[str, Any]:
         """Return the raw JSON structure for pods in *namespace*."""
-        return self._run(["get", "pods", "-n", namespace, "-o", "json"], capture_json=True) 
+        return self._run(["get", "pods", "-n", namespace, "-o", "json"], capture_json=True)
+
+    def get_logs(self, namespace: str, target: str, tail: int | None = 100, since: str | None = None) -> str:
+        """Return logs from *target* (pod ou deployment/xyz) in *namespace*.
+
+        Args:
+            namespace: Namespace name.
+            target: Either a pod name or "deployment/<name>".
+            tail: Equivalent à --tail.
+            since: Ex. "1m" pour --since.
+        """
+        args = ["logs", "-n", namespace, target]
+        if tail is not None:
+            args += ["--tail", str(tail)]
+        if since is not None:
+            args += ["--since", since]
+        return self._run(args, capture_json=False) 
