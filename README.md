@@ -106,29 +106,27 @@ You can customize the appearance and behavior of the graph by modifying:
 
 [MIT License](LICENSE)
 
-## Fonctionnalités
+## Features
 
-- Analyse des logs des pods web dans chaque namespace
-- Visualisation interactive des communications entre namespaces sous forme de graphe
-- Regroupement des services par namespace pour une visualisation simplifiée
-- Une seule arête par direction de communication entre namespaces
-- Distinction visuelle entre les différents namespaces (couleurs)
-- Annotations numériques sur les arêtes indiquant le nombre exact d'appels mesurés
-- Visualisation hautement interactive avec PyVis (déplacement des nœuds, zoom, survol)
-- Option d'utilisation de Bokeh comme alternative pour la visualisation interactive
-- Journalisation détaillée pour le débogage
+- Analyze web pod logs in each namespace
+- Interactive visualization of communications between namespaces as a graph
+- Grouping services by namespace for simplified visualization
+- A single edge per communication direction between namespaces
+- Visual distinction between different namespaces (colors)
+- Numeric annotations on edges indicating the exact number of calls measured
+- Highly interactive visualization with PyVis (node movement, zoom, hover)
+- Option to use Bokeh as an alternative for interactive visualization
+- Detailed logging for debugging
 
-## Prérequis
+## Prerequisites
 
-- Python 3.6+
-- Accès à un cluster Kubernetes (configuration kubectl fonctionnelle)
-- Permissions suffisantes pour lire les logs des pods dans les namespaces cibles
+- Python 3.6 or newer
+- Access to a Kubernetes cluster with a working **kubectl** configuration
+- Sufficient permissions to read pod logs in the target namespaces
 
 ## Configuration
 
-### Exclusion de namespaces
-
-Les namespaces à exclure de l'analyse sont définis dans le fichier `excluded-ns.txt`, un par ligne. Par défaut, les namespaces suivants sont exclus:
+### Excluding namespaces
 
 ```
 kube-system
@@ -138,7 +136,7 @@ calico-apiserver
 cert-manager
 ```
 
-Vous pouvez modifier ce fichier pour ajouter ou supprimer des namespaces à exclure.
+You can modify this file to add or remove namespaces to exclude.
 
 ## Project Structure
 
@@ -169,121 +167,121 @@ The project is organized into the following directories:
 
 - `outputs/`: Default directory for generated visualizations
 
-## Utilisation
+## Usage
 
-Assurez-vous que kubectl est configuré pour accéder à votre cluster Kubernetes, puis exécutez:
+Ensure kubectl is configured to access your Kubernetes cluster, then run:
 
 ```bash
 python graph_k8s_new.py
 ```
 
-### Options de ligne de commande
+### Command Line Options
 
-Le script accepte les options suivantes:
+The script accepts the following options:
 
-- `-d`, `--debug`: Niveau de débogage (0=minimal, 1=info, 2=debug). Par défaut: 1
-- `-o`, `--output`: Chemin du fichier de sortie. Par défaut: k8s_communications_graph.html
-- `--static`: Générer une image statique (.png) au lieu d'une visualisation interactive (.html)
-- `--viz`: Bibliothèque de visualisation à utiliser ('pyvis' ou 'bokeh'). Par défaut: pyvis
+- `-d`, `--debug`: Debug level (0=minimal, 1=info, 2=debug). Default: 1
+- `-o`, `--output`: Output file path. Default: k8s_communications_graph.html
+- `--static`: Generate a static image (.png) instead of an interactive HTML visualization
+- `--viz`: Visualization library to use ('pyvis' or 'bokeh'). Default: pyvis
 
-Exemples:
+Examples:
 
 ```bash
-# Exécuter avec un niveau de débogage détaillé
+# Run with detailed debug level
 python graph_k8s_new.py --debug 2
 
-# Générer une visualisation statique
+# Generate a static visualization
 python graph_k8s_new.py --static
 
-# Utiliser Bokeh au lieu de PyVis pour la visualisation
+# Use Bokeh instead of PyVis for visualization
 python graph_k8s_new.py --viz bokeh
 
-# Spécifier un fichier de sortie personnalisé
+# Specify a custom output file
 python graph_k8s_new.py --output mon_graphe.html
 ```
 
-### Informations de débogage
+### Debug Information
 
-Le script génère des informations de débogage à deux endroits:
+The script generates debug information in two places:
 
-1. Dans la console (sortie standard)
-2. Dans un fichier `graph_k8s.log`
+1. In the console (standard output)
+2. In a file `graph_k8s.log`
 
-Les niveaux de débogage sont:
+Debug levels are:
 
-- **0 (minimal)**: Affiche uniquement les erreurs et avertissements
-- **1 (info)**: Affiche également les informations générales sur le processus (par défaut)
-- **2 (debug)**: Affiche des informations détaillées pour le débogage
+- **0 (minimal)**: Shows only errors and warnings
+- **1 (info)**: Also shows general process information (default)
+- **2 (debug)**: Shows detailed debug information
 
-## Visualisation interactive
+## Interactive Visualization
 
-### PyVis (par défaut)
+### PyVis (default)
 
-La visualisation par défaut utilise PyVis et offre une expérience très interactive:
+The default visualization uses PyVis and offers a very interactive experience:
 
-- **Zoom avancé**: Molette de la souris pour agrandir/réduire le graphe avec animation fluide
-- **Déplacement du graphe**: Cliquez et faites glisser pour déplacer l'ensemble du graphe
-- **Déplacement des nœuds**: Cliquez et faites glisser un nœud pour le repositionner
-- **Survol des nœuds**: Affiche la liste des services regroupés dans le namespace
-- **Survol des arêtes**: Montre le nombre exact de communications détectées
-- **Physique dynamique**: Les nœuds réagissent aux déplacements de manière réaliste
-- **Multi-sélection**: Sélectionnez plusieurs nœuds à la fois
-- **Outils de contrôle**: Boutons pour ajuster la visualisation
+- **Advanced Zoom**: Mouse wheel to zoom in/out with smooth animation
+- **Graph Movement**: Click and drag to move the entire graph
+- **Node Movement**: Click and drag a node to reposition it
+- **Node Hover**: Shows the list of services grouped in the namespace
+- **Edge Hover**: Shows the exact number of communications detected
+- **Dynamic Physics**: Nodes react realistically to movements
+- **Multi-selection**: Select multiple nodes at once
+- **Control Tools**: Buttons to adjust the visualization
 
 ### Bokeh (alternative)
 
-La visualisation avec Bokeh (activée avec `--viz bokeh`) offre une autre perspective:
+The visualization with Bokeh (enabled with `--viz bokeh`) offers a different perspective:
 
-- **Zoom et déplacement**: Outils dédiés pour naviguer dans le graphe
-- **Infobulle au survol**: Informations détaillées sur les namespaces et connections
-- **Disposition statique initiale**: Les nœuds conservent leur position initiale
+- **Zoom and Movement**: Dedicated tools for navigating the graph
+- **Hover Info**: Detailed information about namespaces and connections
+- **Initial Static Layout**: Nodes maintain their initial position
 
-## Simplification du graphe
+## Simplified Graph
 
-Le script crée désormais un graphe simplifié avec les caractéristiques suivantes:
+The script now creates a simplified graph with the following characteristics:
 
-- **Un seul nœud par namespace**: Tous les services d'un même namespace sont regroupés
-- **Une seule arête par direction**: Les communications multiples entre mêmes namespaces sont consolidées
-- **Taille des nœuds proportionnelle**: Plus un namespace contient de services, plus son nœud est grand
-- **Épaisseur des arêtes significative**: Proportionnelle au nombre de communications
-- **Étiquettes numériques précises**: Le nombre exact de communications est affiché sur chaque arête
+- **Single node per namespace**: All services in the same namespace are grouped
+- **Single edge per direction**: Multiple communications between the same namespaces are consolidated
+- **Node Size Proportional**: The larger the namespace, the larger its node
+- **Edge Thickness Significant**: Proportional to the number of communications
+- **Precise Numeric Labels**: The exact number of communications is displayed on each edge
 
-## Fonctionnement du script
+## Script Operation
 
-Le script va:
-1. Se connecter au cluster Kubernetes
-2. Récupérer la liste des namespaces (hors exclusions)
-3. Pour chaque namespace, trouver un pod web et extraire ses logs
-4. Analyser les logs pour détecter les communications entre services
-5. Créer un graphe détaillé des communications entre services
-6. Simplifier le graphe en regroupant par namespace
-7. Générer une visualisation interactive avec PyVis (ou Bokeh)
-8. Sauvegarder le graphique sous forme de fichier HTML interactif (ou PNG si option --static)
+The script will:
+1. Connect to the Kubernetes cluster
+2. Retrieve the list of namespaces (excluding exclusions)
+3. For each namespace, find a web pod and extract its logs
+4. Analyze logs to detect communications between services
+5. Create a detailed communication graph between services
+6. Simplify the graph by grouping by namespace
+7. Generate an interactive visualization with PyVis (or Bokeh)
+8. Save the graph as an interactive HTML file (or PNG if option --static)
 
-## Interprétation du graphique
+## Graph Interpretation
 
-- **Nœuds**: Chaque nœud représente un namespace ou "external" pour les services extérieurs
-- **Arêtes**: Les flèches représentent la direction des communications entre namespaces
-- **Chiffres sur les arêtes**: Nombre total de communications détectées entre ces namespaces
-- **Taille des nœuds**: Proportionnelle au nombre de services dans le namespace
-- **Infobulle des nœuds**: Liste les services individuels regroupés dans le namespace
+- **Nodes**: Each node represents a namespace or "external" for external services
+- **Edges**: Arrows represent the direction of communications between namespaces
+- **Numbers on edges**: Total number of communications detected between these namespaces
+- **Node Size**: Proportional to the number of services in the namespace
+- **Node Tooltips**: List the individual services grouped in the namespace
 
 ## Limitations
 
-- L'analyse est limitée à 100 lignes de logs par pod
-- Un seul pod "web" est analysé par namespace
-- Les logs doivent être au format JSON défini dans `log_format_nginx.txt`
+- The analysis is limited to 100 lines of logs per pod
+- Only one "web" pod is analyzed per namespace
+- Logs must be in the JSON format defined in `log_format_nginx.txt`
 
-## Dépannage
+## Troubleshooting
 
-Si vous rencontrez des problèmes:
+If you encounter issues:
 
-1. Vérifiez que votre configuration kubectl fonctionne correctement
-2. Assurez-vous d'avoir les permissions nécessaires pour lire les logs des pods
-3. Vérifiez que les logs sont bien au format JSON attendu
-4. Utilisez l'option `--debug 2` pour obtenir des informations détaillées sur l'exécution
-5. Consultez le fichier `graph_k8s.log` pour voir les messages de journalisation complets
-6. Assurez-vous que toutes les dépendances sont installées (`pip install -r requirements.txt`)
+1. Ensure your kubectl configuration is correct
+2. Ensure you have sufficient permissions to read pod logs
+3. Ensure logs are in the expected JSON format
+4. Use the `--debug 2` option to get detailed execution information
+5. Check the `graph_k8s.log` file to see full logging messages
+6. Ensure all dependencies are installed (`pip install -r requirements.txt`)
 
 ## Performance Optimization
 
