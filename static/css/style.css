@@ -341,4 +341,144 @@ body {
 /* Update the margin between filter-actions sections */
 .filter-actions + .filter-actions {
     margin-top: 0;
+}
+
+/* Focus Mode Styles */
+.focus-controls {
+    display: flex;
+    gap: 5px;
+    margin-bottom: 15px;
+}
+
+.focus-controls .action-button {
+    flex: 1;
+}
+
+.focus-settings {
+    background-color: #34495e;
+    border-radius: 4px;
+    padding: 10px;
+    margin-bottom: 15px;
+}
+
+.setting-group {
+    margin-bottom: 10px;
+}
+
+.setting-group:last-child {
+    margin-bottom: 0;
+}
+
+.setting-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 0.9rem;
+    color: #bdc3c7;
+}
+
+.focus-select {
+    width: 100%;
+    padding: 5px;
+    border-radius: 4px;
+    border: 1px solid #3498db;
+    background-color: #2c3e50;
+    color: #ecf0f1;
+    font-size: 0.9rem;
+}
+
+.focus-select:focus {
+    outline: none;
+    border-color: #2980b9;
+    box-shadow: 0 0 5px rgba(52, 152, 219, 0.3);
+}
+
+.focused-nodes-container {
+    background-color: #34495e;
+    border-radius: 4px;
+    padding: 10px;
+    margin-bottom: 15px;
+}
+
+.focused-nodes-container label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+    color: #bdc3c7;
+}
+
+.focused-nodes-list {
+    min-height: 30px;
+    max-height: 80px;
+    overflow-y: auto;
+    background-color: #2c3e50;
+    border-radius: 3px;
+    padding: 5px;
+    border: 1px solid #3498db;
+}
+
+.focused-node {
+    display: inline-block;
+    background-color: #3498db;
+    color: white;
+    padding: 2px 8px;
+    margin: 2px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.focused-node:hover {
+    background-color: #2980b9;
+}
+
+.no-focus {
+    color: #7f8c8d;
+    font-style: italic;
+    font-size: 0.9rem;
+}
+
+.focus-instructions {
+    background-color: #34495e;
+    border-radius: 4px;
+    padding: 8px;
+    border-left: 3px solid #3498db;
+}
+
+.focus-instructions small {
+    color: #bdc3c7;
+    line-height: 1.4;
+}
+
+/* Focus mode indicators */
+.focus-mode-indicator {
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.focus-mode-indicator.active::after {
+    content: "●";
+    color: #27ae60;
+    position: absolute;
+    top: 0;
+    right: -10px;
+    font-size: 12px;
+}
+
+/* Focus mode button states */
+#toggle-focus-mode-btn.active {
+    background-color: #27ae60;
+}
+
+#toggle-focus-mode-btn.active:hover {
+    background-color: #219a52;
+}
+
+#clear-focus-btn:disabled {
+    background-color: #7f8c8d;
+    cursor: not-allowed;
+}
+
+#clear-focus-btn:disabled:hover {
+    background-color: #7f8c8d;
 } 

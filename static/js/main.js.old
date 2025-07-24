@@ -1,0 +1,102 @@
+// K8s Communications Graph Visualizer Main JS
+// This file serves as the entry point for the modular version
+
+// Main initialization function
+document.addEventListener('DOMContentLoaded', () => {
+    // DOM Elements
+    const networkContainer = document.getElementById('network');
+    const refreshBtn = document.getElementById('refresh-btn');
+    const togglePhysicsBtn = document.getElementById('toggle-physics-btn');
+    const physicsBtnText = document.getElementById('physics-btn-text');
+    const resetViewBtn = document.getElementById('reset-view-btn');
+    const toggleFixedPositionsBtn = document.getElementById('toggle-fixed-positions-btn');
+    const statusDiv = document.getElementById('status');
+    const lastUpdateDiv = document.getElementById('last-update');
+    const updateIntervalInput = document.getElementById('update-interval');
+    const setIntervalBtn = document.getElementById('set-interval-btn');
+    const gravityValue = document.getElementById('gravity-value');
+    const springLengthValue = document.getElementById('spring-length-value');
+    const springStrengthValue = document.getElementById('spring-strength-value');
+    const applyPhysicsBtn = document.getElementById('apply-physics-btn');
+    const nodeSearchInput = document.getElementById('node-search');
+    const clearSearchBtn = document.getElementById('clear-search-btn');
+    const nodeFiltersDiv = document.getElementById('node-filters');
+    const toggleAnimationBtn = document.getElementById('toggle-animation-btn');
+    const countdownTimerDiv = document.getElementById('countdown-timer');
+    
+    console.log("DOM content loaded");
+    
+    // Initialize application modules
+    import('./modules/state.js').then(({ config, network, animation, dom, physicsOptions, networkOptions }) => {
+        // Initialize DOM references
+        dom.networkContainer = networkContainer;
+        dom.refreshBtn = refreshBtn;
+        dom.togglePhysicsBtn = togglePhysicsBtn;
+        dom.physicsBtnText = physicsBtnText;
+        dom.resetViewBtn = resetViewBtn;
+        dom.toggleFixedPositionsBtn = toggleFixedPositionsBtn;
+        dom.statusDiv = statusDiv;
+        dom.lastUpdateDiv = lastUpdateDiv;
+        dom.updateIntervalInput = updateIntervalInput;
+        dom.setIntervalBtn = setIntervalBtn;
+        dom.gravityValue = gravityValue;
+        dom.springLengthValue = springLengthValue;
+        dom.springStrengthValue = springStrengthValue;
+        dom.applyPhysicsBtn = applyPhysicsBtn;
+        dom.nodeSearchInput = nodeSearchInput;
+        dom.clearSearchBtn = clearSearchBtn;
+        dom.nodeFiltersDiv = nodeFiltersDiv;
+        dom.toggleAnimationBtn = toggleAnimationBtn;
+        dom.countdownTimerDiv = countdownTimerDiv;
+        
+        // Make sure physics is disabled by default
+        config.physicsEnabled = false;
+        physicsOptions.enabled = false;
+        networkOptions.physics.enabled = false;
+        
+        // Import and initialize modules
+        Promise.all([
+            import('./modules/config.js'),
+            import('./modules/network.js'),
+            import('./modules/ui.js'),
+            import('./modules/physics.js'),
+            import('./modules/filters.js'),
+            import('./modules/animation.js'),
+            import('./modules/utils.js')
+        ]).then(([configModule, networkModule, uiModule, physicsModule, filtersModule, animationModule, utilsModule]) => {
+            // Initialize configuration
+            configModule.initConfig();
+            
+            // Load server configuration
+            configModule.loadConfiguration().then(() => {
+                // Initialize UI
+                uiModule.initUI();
+                
+                // Initialize network
+                networkModule.initNetwork();
+                
+                // Update physics button text
+                physicsModule.updatePhysicsButtonText();
+                
+                // Initialize auto-refresh
+                utilsModule.setupAutoRefresh();
+                
+                // Request initial data
+                networkModule.requestGraphData();
+                
+                // Set the initial view
+                setTimeout(() => {
+                    networkModule.fitGraphToWindow();
+                }, 1000);
+                
+                console.log("Application initialized successfully");
+            });
+        }).catch(error => {
+            console.error("Error initializing modules:", error);
+            statusDiv.innerHTML = "Error initializing application modules. Please check console for details.";
+        });
+    }).catch(error => {
+        console.error("Error loading state module:", error);
+        statusDiv.innerHTML = "Error loading application modules. Please check console for details.";
+    });
+}); 

@@ -2,6 +2,7 @@
 
 import { config, network, dom } from './state.js';
 import { initAnimationDots } from './network.js';
+import { featureFlags } from './feature-flags.js';
 
 // Initialize the filters
 export function initFilters() {
@@ -160,6 +161,16 @@ export function applyNodeFilters() {
     
     console.log("Applying node filters: Hiding", config.nodeFilters.size, "nodes");
     
+    // Check if we should apply focus filters instead
+    if (featureFlags.isEnabled('focusMode')) {
+        // Focus mode has its own filtering logic
+        // Let focus mode handle the filtering if it's active
+        const focusModeEvent = new CustomEvent('applyFiltersRequested', {
+            detail: { source: 'filters' }
+        });
+        document.dispatchEvent(focusModeEvent);
+    }
+    
     // Get all nodes currently in the data set
     const allNodesInDataset = network.nodes.get();
     const visibleNodeIds = allNodesInDataset.map(node => node.id)
@@ -204,6 +215,19 @@ export function applyNodeFilters() {
                 }
                 
                 console.log(`Applied saved position to node ${nodeId}:`, config.nodePositions[nodeId]);
+            } else if (config.nodePositions[nodeId] && !config.fixedPositionsEnabled) {
+                // Apply position but don't fix it - respect the toggle state
+                nodeToAdd.x = config.nodePositions[nodeId].x;
+                nodeToAdd.y = config.nodePositions[nodeId].y;
+                nodeToAdd.fixed = false;
+                
+                // Preserve physics settings based on edge count
+                const edgeCount = config.nodeEdgeCounts[nodeId] || 0;
+                if (edgeCount > 3) {
+                    nodeToAdd.physics = false;
+                }
+                
+                console.log(`Applied position without fixing node ${nodeId}:`, config.nodePositions[nodeId]);
             }
             
             nodesToAdd.push(nodeToAdd);
@@ -318,14 +342,24 @@ export function applyNodeFilters() {
         const allNodeIds = network.nodes.getIds();
         const currentPositions = network.instance.getPositions(allNodeIds);
         
+        const nodesToUpdate = [];
         allNodeIds.forEach(nodeId => {
-            // Update node positions in the dataset
-            network.nodes.update({
+            const edgeCount = config.nodeEdgeCounts[nodeId] || 0;
+            
+            // Create update object with position and fixed state
+            const nodeUpdate = {
                 id: nodeId,
                 x: currentPositions[nodeId].x,
                 y: currentPositions[nodeId].y,
                 fixed: true
-            });
+            };
+            
+            // Preserve physics constraints for nodes with more than 3 edges
+            if (edgeCount > 3) {
+                nodeUpdate.physics = false;
+            }
+            
+            nodesToUpdate.push(nodeUpdate);
             
             // Also update our stored positions
             config.nodePositions[nodeId] = {
@@ -333,6 +367,46 @@ export function applyNodeFilters() {
                 y: currentPositions[nodeId].y
             };
         });
+        
+        // Update all nodes at once
+        network.nodes.update(nodesToUpdate);
+        
+        console.log(`Fixed positions for ${nodesToUpdate.length} nodes in applyNodeFilters`);
+    } else if (!config.fixedPositionsEnabled && network.instance) {
+        // Ensure nodes are not fixed when fixedPositionsEnabled is false
+        const allNodeIds = network.nodes.getIds();
+        const currentPositions = network.instance.getPositions(allNodeIds);
+        
+        const nodesToUpdate = [];
+        allNodeIds.forEach(nodeId => {
+            const edgeCount = config.nodeEdgeCounts[nodeId] || 0;
+            
+            // Create update object with position but unfixed state
+            const nodeUpdate = {
+                id: nodeId,
+                x: currentPositions[nodeId].x,
+                y: currentPositions[nodeId].y,
+                fixed: false
+            };
+            
+            // Preserve physics constraints for nodes with more than 3 edges
+            if (edgeCount > 3) {
+                nodeUpdate.physics = false;
+            }
+            
+            nodesToUpdate.push(nodeUpdate);
+            
+            // Also update our stored positions
+            config.nodePositions[nodeId] = {
+                x: currentPositions[nodeId].x,
+                y: currentPositions[nodeId].y
+            };
+        });
+        
+        // Update all nodes at once
+        network.nodes.update(nodesToUpdate);
+        
+        console.log(`Unfixed positions for ${nodesToUpdate.length} nodes in applyNodeFilters`);
     }
     
     // Update the node filter checkboxes to match the current state
@@ -346,6 +420,24 @@ export function applyNodeFilters() {
     if (config.animation && config.animation.enabled) {
         initAnimationDots();
     }
+}
+
+// Apply focus filters with conditional logic for focus mode
+export function applyFocusFilters() {
+    // Check if focus mode is enabled
+    if (!featureFlags.isEnabled('focusMode')) {
+        // If focus mode is not enabled, use regular filtering
+        return applyNodeFilters();
+    }
+    
+    // Focus mode is enabled - let the focus mode module handle filtering
+    console.log("Focus mode enabled - delegating filtering to focus mode");
+    
+    // Emit event to notify focus mode to apply its filters
+    const focusFilterEvent = new CustomEvent('focusFiltersRequested', {
+        detail: { source: 'filters' }
+    });
+    document.dispatchEvent(focusFilterEvent);
 }
 
 // Filter nodes by search term
@@ -385,4 +477,48 @@ export function highlightMatchingNodes(searchTerm) {
     if (dom.statusDiv) {
         dom.statusDiv.innerHTML = `Found ${matchingNodes.length} nodes matching "${searchTerm}"`;
     }
+}
+
+// Utility function to ensure all nodes respect the current fixedPositionsEnabled state
+export function syncNodeStatesWithToggle() {
+    if (!network.instance) return;
+    
+    const allNodeIds = network.nodes.getIds();
+    if (allNodeIds.length === 0) return;
+    
+    const currentPositions = network.instance.getPositions(allNodeIds);
+    const nodesToUpdate = [];
+    
+    allNodeIds.forEach(nodeId => {
+        const edgeCount = config.nodeEdgeCounts[nodeId] || 0;
+        
+        // Create update object respecting the current toggle state
+        const nodeUpdate = {
+            id: nodeId,
+            x: currentPositions[nodeId].x,
+            y: currentPositions[nodeId].y,
+            fixed: config.fixedPositionsEnabled
+        };
+        
+        // Always preserve physics constraints for nodes with more than 3 edges
+        if (edgeCount > 3) {
+            nodeUpdate.physics = false;
+        }
+        
+        nodesToUpdate.push(nodeUpdate);
+        
+        // Update stored positions
+        config.nodePositions[nodeId] = {
+            x: currentPositions[nodeId].x,
+            y: currentPositions[nodeId].y
+        };
+    });
+    
+    // Update all nodes at once
+    network.nodes.update(nodesToUpdate);
+    
+    const fixedCount = nodesToUpdate.filter(node => node.fixed).length;
+    const unfixedCount = nodesToUpdate.length - fixedCount;
+    
+    console.log(`Synchronized node states: ${fixedCount} fixed, ${unfixedCount} unfixed (fixedPositionsEnabled: ${config.fixedPositionsEnabled})`);
 } 

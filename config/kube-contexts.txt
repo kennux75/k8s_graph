@@ -1,2 +1,3 @@
 kube_prod_dc2
 kube_pcidss-prod.dc2
+kubernetes-admin_dc1@kube_prod_dc1

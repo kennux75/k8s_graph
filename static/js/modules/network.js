@@ -166,10 +166,71 @@ export function requestGraphData() {
         dom.statusDiv.innerHTML = "Loading graph data...";
     }
     
+    // Check if we have a filtered view active (filtered graph data loaded)
+    const hasFilteredView = config.originalGraphData !== null;
+    
+    if (hasFilteredView) {
+        console.log("Filtered view detected, refreshing with current filter state");
+        // Get currently visible nodes to maintain the filtered view
+        const currentVisibleNodes = network.nodes.get().map(node => node.id);
+        
+        if (currentVisibleNodes.length > 0) {
+            // Use the filtered graph API to refresh the current view
+            fetch('/filtered_graph_data', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    nodes: config.originalFilteredNodes || currentVisibleNodes.filter(nodeId => {
+                        // Fallback: Only include nodes that match the current search term
+                        const searchTerm = dom.nodeSearchInput ? dom.nodeSearchInput.value.toLowerCase() : '';
+                        return searchTerm === '' || nodeId.toLowerCase().includes(searchTerm);
+                    })
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'error') {
+                    throw new Error(data.message);
+                }
+                
+                console.log("Received filtered graph data for refresh:", data);
+                updateGraph(data);
+                
+                const now = new Date();
+                if (dom.lastUpdateDiv) {
+                    dom.lastUpdateDiv.innerHTML = `Last update: ${now.toLocaleTimeString()}`;
+                }
+                
+                const info = data.filtered_info;
+                if (dom.statusDiv) {
+                    dom.statusDiv.innerHTML = `Filtered view refreshed: ${info.total_nodes} nodes (${info.original_nodes} filtered + ${info.added_source_nodes} sources), ${info.total_edges} communications`;
+                }
+                
+                // Reset countdown timer
+                config.countdownTimer = config.updateInterval;
+            })
+            .catch(error => {
+                console.error("Error refreshing filtered data, falling back to full refresh:", error);
+                // Fallback to normal refresh if filtered refresh fails
+                refreshFullGraphData();
+            });
+            
+            return; // Exit early for filtered refresh
+        }
+    }
+    
+    // Normal full refresh
+    refreshFullGraphData();
+}
+
+// Helper function for full graph refresh
+function refreshFullGraphData() {
     fetch('/graph_data')
         .then(response => response.json())
         .then(data => {
-            console.log("Received graph data:", data);
+            console.log("Received full graph data:", data);
             updateGraph(data);
             
             const now = new Date();
@@ -330,11 +391,18 @@ export function updateGraph(data) {
                 node.physics = false;
             }
             
-            // Always use saved position for this node during updates
+            // Apply saved position for this node during updates
             if (config.nodePositions[node.id]) {
                 node.x = config.nodePositions[node.id].x;
                 node.y = config.nodePositions[node.id].y;
-                node.fixed = true;
+                
+                // IMPORTANT: Only set fixed=true if fixedPositionsEnabled is true
+                // This respects the user's choice via the "toggle fixed positions" button
+                if (config.fixedPositionsEnabled) {
+                    node.fixed = true;
+                } else {
+                    node.fixed = false;
+                }
             }
             
             // Pre-mark nodes that are filtered out

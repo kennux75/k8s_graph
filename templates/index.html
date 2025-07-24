@@ -123,6 +123,11 @@
                         </button>
                     </div>
                     <div class="filter-actions">
+                        <button id="restore-full-graph" class="action-button" style="display: none;">
+                            <i class="fas fa-undo"></i> Restore Full Graph
+                        </button>
+                    </div>
+                    <div class="filter-actions">
                         <button id="select-all-nodes" class="action-button">
                             <i class="fas fa-check-double"></i> Select All
                         </button>
@@ -133,6 +138,61 @@
                     <div id="node-filters" class="filter-list">
                         <!-- Node filters will be added here dynamically -->
                         <div class="loading">Loading nodes...</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Focus Mode Section -->
+            <div class="panel-section" id="focus-mode-section">
+                <h3>
+                    <span>Focus Mode</span>
+                    <button class="collapse-btn">
+                        <i class="fas fa-chevron-up"></i>
+                    </button>
+                </h3>
+                <div class="panel-content">
+                    <div class="focus-controls">
+                        <button id="toggle-focus-mode-btn" class="action-button">
+                            <i class="fas fa-crosshairs"></i> <span id="focus-btn-text">Enable Focus</span>
+                        </button>
+                        <button id="clear-focus-btn" class="action-button" disabled>
+                            <i class="fas fa-times"></i> Clear Focus
+                        </button>
+                    </div>
+                    
+                    <div class="focus-settings">
+                        <div class="setting-group">
+                            <label for="focus-type-select">Focus Type:</label>
+                            <select id="focus-type-select" class="focus-select">
+                                <option value="direct">Direct Only</option>
+                                <option value="neighbors" selected>Include Neighbors</option>
+                                <option value="path">Show Paths</option>
+                            </select>
+                        </div>
+                        
+                        <div class="setting-group" id="focus-depth-group">
+                            <label for="focus-depth-select">Neighbor Depth:</label>
+                            <select id="focus-depth-select" class="focus-select">
+                                <option value="1" selected>1 Level</option>
+                                <option value="2">2 Levels</option>
+                                <option value="3">3 Levels</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="focused-nodes-container">
+                        <label>Focused Nodes:</label>
+                        <div id="focused-nodes-list" class="focused-nodes-list">
+                            <span class="no-focus">No nodes focused</span>
+                        </div>
+                    </div>
+                    
+                    <div class="focus-instructions">
+                        <small>
+                            • Double-click a node to focus on it<br>
+                            • Ctrl+Click to add/remove from focus<br>
+                            • Use controls above to adjust focus behavior
+                        </small>
                     </div>
                 </div>
             </div>

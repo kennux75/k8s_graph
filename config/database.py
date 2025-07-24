@@ -9,7 +9,7 @@ Database configuration settings
 DB_CONFIG = {
     'host': 'localhost',
     'user': 'root',
-    'password': 'mypass',
+    'password': 'N0tThatSecr3t',
     'database': 'k8s_graph'
 }
 

@@ -1,10 +1,10 @@
 // K8s Communications Graph Visualizer - UI Module
 
 import { dom, config, network } from './state.js';
-import { togglePhysics, applyPhysicsSettings, toggleFixedPositions } from './physics.js';
+import { togglePhysics, applyPhysicsSettings, toggleFixedPositions, updatePhysicsButtonText } from './physics.js';
 import { toggleAnimation } from './animation.js';
 import { requestGraphData, fitGraphToWindow } from './network.js';
-import { applyNodeFilters, filterNodesBySearchTerm, highlightMatchingNodes } from './filters.js';
+import { applyNodeFilters, filterNodesBySearchTerm, highlightMatchingNodes, syncNodeStatesWithToggle } from './filters.js';
 import { setupAutoRefresh } from './utils.js';
 
 // Initialize UI elements and event listeners
@@ -158,6 +158,7 @@ function setupEventListeners() {
     const deselectAllBtn = document.getElementById('deselect-all-nodes');
     const selectFilteredBtn = document.getElementById('select-filtered-nodes');
     const deselectFilteredBtn = document.getElementById('deselect-filtered-nodes');
+    const restoreFullGraphBtn = document.getElementById('restore-full-graph');
     
     if (selectAllBtn) {
         selectAllBtn.addEventListener('click', () => {
@@ -170,6 +171,7 @@ function setupEventListeners() {
             });
             // Apply the filters (which will show all nodes)
             applyNodeFilters();
+            syncNodeStatesWithToggle();
         });
     }
     
@@ -187,33 +189,124 @@ function setupEventListeners() {
             });
             // Apply the filters (which will hide all nodes)
             applyNodeFilters();
+            syncNodeStatesWithToggle();
         });
     }
     
     // Select and deselect filtered nodes
     if (selectFilteredBtn) {
-        selectFilteredBtn.addEventListener('click', () => {
+        selectFilteredBtn.addEventListener('click', async () => {
             // Get current search term
             const searchTerm = dom.nodeSearchInput ? dom.nodeSearchInput.value.toLowerCase() : '';
             if (!searchTerm) return; // Do nothing if no search term
             
-            // Get all node checkboxes currently visible in the filter
+            // Get filtered node IDs
+            const filteredNodeIds = [];
             const visibleCheckboxes = document.querySelectorAll('.node-checkbox');
             
-            // Process each checkbox
             visibleCheckboxes.forEach(checkbox => {
                 const nodeId = checkbox.dataset.nodeId;
                 if (nodeId.toLowerCase().includes(searchTerm)) {
-                    // Remove this node from filters (show it)
-                    config.nodeFilters.delete(nodeId);
-                    // Update checkbox
-                    checkbox.checked = true;
+                    filteredNodeIds.push(nodeId);
                 }
             });
             
-            // Apply the updated filters
-            applyNodeFilters();
-            dom.statusDiv.innerHTML = `Selected all nodes matching "${searchTerm}"`;
+            if (filteredNodeIds.length === 0) {
+                dom.statusDiv.innerHTML = 'No nodes match the current search term';
+                return;
+            }
+            
+            try {
+                dom.statusDiv.innerHTML = `Loading filtered graph with communications...`;
+                
+                // Call the new API to get filtered data with communications
+                const response = await fetch('/filtered_graph_data', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        nodes: filteredNodeIds
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const filteredData = await response.json();
+                
+                if (filteredData.status === 'error') {
+                    throw new Error(filteredData.message);
+                }
+                
+                // Clear current filters to show all nodes
+                config.nodeFilters.clear();
+                
+                // Save current graph data if needed for restoration
+                if (!config.originalGraphData) {
+                    config.originalGraphData = {
+                        nodes: network.nodes.get(),
+                        edges: network.edges.get()
+                    };
+                }
+                
+                // Store the original filtered nodes for refresh preservation
+                config.originalFilteredNodes = filteredNodeIds.slice(); // Make a copy
+                
+                // Update the network with filtered data
+                network.nodes.clear();
+                network.edges.clear();
+                network.nodes.add(filteredData.nodes);
+                network.edges.add(filteredData.edges);
+                
+                // Update filter checkboxes to reflect the new state
+                const allCheckboxes = document.querySelectorAll('.node-checkbox');
+                const visibleNodeIds = new Set(filteredData.nodes.map(node => node.id));
+                
+                allCheckboxes.forEach(checkbox => {
+                    const nodeId = checkbox.dataset.nodeId;
+                    if (visibleNodeIds.has(nodeId)) {
+                        // Node is visible - remove from filters and check the box
+                        config.nodeFilters.delete(nodeId);
+                        checkbox.checked = true;
+                    } else {
+                        // Node is not visible - add to filters and uncheck the box
+                        config.nodeFilters.add(nodeId);
+                        checkbox.checked = false;
+                    }
+                });
+                
+                // Show the restore button
+                if (restoreFullGraphBtn) {
+                    restoreFullGraphBtn.style.display = 'block';
+                }
+                
+                // Update status with detailed information
+                const info = filteredData.filtered_info;
+                dom.statusDiv.innerHTML = `Filtered view: ${info.total_nodes} nodes (${info.original_nodes} filtered + ${info.added_source_nodes} sources), ${info.total_edges} communications`;
+                
+                console.log('Filtered graph loaded:', info);
+                
+            } catch (error) {
+                console.error('Error loading filtered graph:', error);
+                dom.statusDiv.innerHTML = `Error loading filtered graph: ${error.message}`;
+                
+                // Fallback to original behavior
+                filteredNodeIds.forEach(nodeId => {
+                    config.nodeFilters.delete(nodeId);
+                });
+                
+                const checkboxes = document.querySelectorAll('.node-checkbox');
+                checkboxes.forEach(checkbox => {
+                    const nodeId = checkbox.dataset.nodeId;
+                    if (filteredNodeIds.includes(nodeId)) {
+                        checkbox.checked = true;
+                    }
+                });
+                
+                applyNodeFilters();
+            }
         });
     }
     
@@ -240,6 +333,65 @@ function setupEventListeners() {
             // Apply the updated filters
             applyNodeFilters();
             dom.statusDiv.innerHTML = `Deselected all nodes matching "${searchTerm}"`;
+        });
+    }
+
+    // Restore full graph button
+    if (restoreFullGraphBtn) {
+        restoreFullGraphBtn.addEventListener('click', async () => {
+            try {
+                dom.statusDiv.innerHTML = 'Restoring full graph...';
+                
+                if (config.originalGraphData) {
+                    // Restore from saved data
+                    network.nodes.clear();
+                    network.edges.clear();
+                    network.nodes.add(config.originalGraphData.nodes);
+                    network.edges.add(config.originalGraphData.edges);
+                    
+                    // Clear the saved data
+                    config.originalGraphData = null;
+                    config.originalFilteredNodes = null;
+                    
+                    dom.statusDiv.innerHTML = 'Full graph restored from cache';
+                } else {
+                    // Reload from server
+                    const response = await fetch('/graph_data');
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
+                    const graphData = await response.json();
+                    
+                    network.nodes.clear();
+                    network.edges.clear();
+                    network.nodes.add(graphData.nodes);
+                    network.edges.add(graphData.edges);
+                    
+                    dom.statusDiv.innerHTML = 'Full graph reloaded from server';
+                }
+                
+                // Clear all node filters
+                config.nodeFilters.clear();
+                
+                // Update all checkboxes to checked
+                const allCheckboxes = document.querySelectorAll('.node-checkbox');
+                allCheckboxes.forEach(checkbox => {
+                    checkbox.checked = true;
+                });
+                
+                // Hide the restore button
+                restoreFullGraphBtn.style.display = 'none';
+                
+                // Ensure node states are synchronized with the toggle button
+                syncNodeStatesWithToggle();
+                
+                console.log('Full graph restored');
+                
+            } catch (error) {
+                console.error('Error restoring full graph:', error);
+                dom.statusDiv.innerHTML = `Error restoring graph: ${error.message}`;
+            }
         });
     }
     

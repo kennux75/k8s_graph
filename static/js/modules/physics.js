@@ -23,6 +23,31 @@ export function togglePhysics() {
     // Apply to the network
     if (network.instance) {
         network.instance.setOptions({ physics: updatedPhysics });
+        
+        // IMPORTANT: After changing global physics, we need to preserve individual node constraints
+        // Re-apply physics constraints for nodes with more than 3 edges
+        if (config.physicsEnabled) {
+            const nodeIds = network.nodes.getIds();
+            const nodesToUpdate = [];
+            
+            nodeIds.forEach(nodeId => {
+                const edgeCount = config.nodeEdgeCounts[nodeId] || 0;
+                
+                // Nodes with more than 3 edges should keep physics disabled
+                if (edgeCount > 3) {
+                    nodesToUpdate.push({
+                        id: nodeId,
+                        physics: false
+                    });
+                }
+            });
+            
+            // Update nodes that need physics disabled
+            if (nodesToUpdate.length > 0) {
+                network.nodes.update(nodesToUpdate);
+                console.log(`Preserved physics constraints for ${nodesToUpdate.length} nodes with >3 edges`);
+            }
+        }
     }
     
     // Update button text and state
@@ -88,7 +113,8 @@ export function toggleFixedPositions() {
         // Fix nodes at their current positions
         const positions = network.instance.getPositions(nodeIds);
         
-        // Update all nodes to fixed positions
+        // Update all nodes to fixed positions, preserving physics constraints
+        const nodesToUpdate = [];
         nodeIds.forEach(nodeId => {
             // Store positions for all nodes to use during updates
             config.nodePositions[nodeId] = { 
@@ -96,26 +122,63 @@ export function toggleFixedPositions() {
                 y: positions[nodeId].y 
             };
             
-            // Update the node in the dataset
-            network.nodes.update({
+            const edgeCount = config.nodeEdgeCounts[nodeId] || 0;
+            
+            // Create update object with position and fixed state
+            const nodeUpdate = {
                 id: nodeId,
                 x: positions[nodeId].x,
                 y: positions[nodeId].y,
                 fixed: true
-            });
+            };
+            
+            // IMPORTANT: Preserve physics constraints for nodes with more than 3 edges
+            if (edgeCount > 3) {
+                nodeUpdate.physics = false;
+            }
+            
+            nodesToUpdate.push(nodeUpdate);
         });
+        
+        // Update all nodes at once
+        network.nodes.update(nodesToUpdate);
+        
+        // Log the preservation of physics constraints
+        const physicsDisabledCount = nodesToUpdate.filter(node => node.physics === false).length;
+        if (physicsDisabledCount > 0) {
+            console.log(`Fixed positions: Preserved physics constraints for ${physicsDisabledCount} nodes with >3 edges`);
+        }
         
         if (dom.statusDiv) {
             dom.statusDiv.innerHTML = "Node positions fixed.";
         }
     } else {
-        // Unfix all nodes to allow movement
+        // Unfix all nodes to allow movement, but preserve physics constraints
+        const nodesToUpdate = [];
         nodeIds.forEach(nodeId => {
-            network.nodes.update({
+            const edgeCount = config.nodeEdgeCounts[nodeId] || 0;
+            
+            const nodeUpdate = {
                 id: nodeId,
                 fixed: false
-            });
+            };
+            
+            // IMPORTANT: Preserve physics constraints for nodes with more than 3 edges
+            if (edgeCount > 3) {
+                nodeUpdate.physics = false;
+            }
+            
+            nodesToUpdate.push(nodeUpdate);
         });
+        
+        // Update all nodes at once
+        network.nodes.update(nodesToUpdate);
+        
+        // Log the preservation of physics constraints
+        const physicsDisabledCount = nodesToUpdate.filter(node => node.physics === false).length;
+        if (physicsDisabledCount > 0) {
+            console.log(`Unfixed positions: Preserved physics constraints for ${physicsDisabledCount} nodes with >3 edges`);
+        }
         
         if (dom.statusDiv) {
             dom.statusDiv.innerHTML = "Positions are now dynamic.";

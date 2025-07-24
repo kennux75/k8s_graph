@@ -48,7 +48,21 @@ export const config = {
     cumulativeEdgeData: {},
     updateCounter: 0,
     cumulativeDataEnabled: true,
-    countdownTimer: 60
+    countdownTimer: 60,
+    // Focus mode state
+    focusMode: {
+        enabled: false,
+        focusedNodes: new Set(),
+        originalFilters: new Set(),
+        focusType: 'direct',
+        focusDepth: 1
+    },
+    // Node groups state
+    nodeGroups: new Map(), // Map of group ID to group data
+    // Original graph data for restoration
+    originalGraphData: null,
+    // Store original filtered nodes for refresh preservation
+    originalFilteredNodes: null
 };
 
 // Animation state
