@@ -12,13 +12,14 @@ import threading
 import time
 from config.constants import MAX_WORKER_THREADS, KUBE_CONTEXTS_FILE
 from libs.database.db_manager import DatabaseManager
+from libs.common.logging_utils import get_logger
 
 from libs.parsing.kubernetes import load_kube_contexts, load_excluded_namespaces, get_namespaces, count_pods_in_namespace, find_web_pod_in_namespace, load_kube_config, get_all_pods_with_ips_in_namespaces
 from libs.parsing.logs import parse_logs, extract_logs, extract_and_parse_logs_threaded
 from libs.graph.graph_builder import create_simplified_graph
 
-# Global logger (will be set by the main script)
-logger = None
+# Logger
+logger = get_logger(__name__)
 
 class K8sCommunicationGraph:
     def __init__(self, skip_logs=False):
@@ -325,9 +326,4 @@ class K8sCommunicationGraph:
     def __del__(self):
         """Cleanup method to close database connection."""
         if hasattr(self, 'db_manager'):
-            self.db_manager.close()
-
-def set_logger(log_instance):
-    """Set the global logger."""
-    global logger
-    logger = log_instance 
+            self.db_manager.close() 

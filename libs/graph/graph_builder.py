@@ -11,9 +11,10 @@ import math
 import matplotlib.colors as mcolors
 from collections import defaultdict
 from bokeh.palettes import Turbo256
+from libs.common.logging_utils import get_logger
 
-# Global logger (will be set by the main script)
-logger = None
+# Logger
+logger = get_logger(__name__)
 
 def create_simplified_graph(graph, node_to_namespace, node_to_context=None):
     """Create a simplified graph with one node per namespace and one edge per direction."""

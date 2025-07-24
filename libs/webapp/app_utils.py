@@ -7,10 +7,10 @@ Utility functions for the Kubernetes Communications Graph Web Application
 
 import json
 import threading
-import logging
+from libs.common.logging_utils import get_logger
 
 # Initialize logger
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 def convert_dict_for_json(data):
     """Convert any dictionary with non-string keys to string keys for JSON serialization"""

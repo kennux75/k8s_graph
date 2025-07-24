@@ -6,14 +6,14 @@ Socket.IO event handlers for the Kubernetes Communications Graph Web Application
 """
 
 import threading
-import logging
 from flask import request
 from flask_socketio import SocketIO
 
 from libs.webapp.graph_manager import graph_data, graph_lock, build_graph_data
+from libs.common.logging_utils import get_logger
 
 # Initialize logger
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 # SocketIO instance
 socketio = None

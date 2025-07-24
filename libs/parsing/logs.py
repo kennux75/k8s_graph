@@ -9,12 +9,13 @@ import json
 import yaml
 import re
 from urllib.parse import urlparse, parse_qs
+from libs.common.logging_utils import get_logger
 import subprocess
 from collections import defaultdict
 from config.constants import LOG_LINES_LIMIT
 
-# Global logger (will be set by the main script)
-logger = None
+# Logger
+logger = get_logger(__name__)
 
 def extract_field_from_json_line(log_entry, field_name):
     """Extract a field from a JSON log entry."""

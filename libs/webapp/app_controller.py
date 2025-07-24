@@ -7,20 +7,20 @@ Initializes and runs the Flask app with SocketIO
 """
 
 import os
-import logging
+from libs.common.logging_utils import get_logger
 import threading
 from flask import Flask
 from flask_socketio import SocketIO
 from apscheduler.schedulers.background import BackgroundScheduler
 
 from config.app_config import UPDATE_INTERVAL
-from libs.webapp.graph_manager import build_graph_data, set_logger as set_graph_manager_logger
-from libs.webapp.routes import init_routes, set_logger as set_routes_logger
-from libs.webapp.socket_handlers import init_socket_handlers, set_logger as set_socket_handlers_logger
-from libs.webapp.app_utils import set_logger as set_app_utils_logger
+from libs.webapp.graph_manager import build_graph_data
+from libs.webapp.routes import init_routes
+from libs.webapp.socket_handlers import init_socket_handlers
+from libs.webapp.app_utils import *
 
 # Initialize logger
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 # Scheduler for background tasks
 scheduler = None
@@ -51,13 +51,10 @@ def create_app():
 
 def init_app(app, socketio, logger_instance):
     """Initialize the application with routes and handlers"""
-    # Set loggers
+    # Override module-level logger if provided
     global logger
-    logger = logger_instance
-    set_graph_manager_logger(logger)
-    set_routes_logger(logger)
-    set_socket_handlers_logger(logger)
-    set_app_utils_logger(logger)
+    if logger_instance:
+        logger = logger_instance
     
     # Initialize routes and socket handlers
     init_routes(app, socketio)
@@ -88,9 +85,4 @@ def run_app(app, socketio):
     except Exception as e:
         logger.error(f"Error running application: {e}", exc_info=True)
         if scheduler:
-            scheduler.shutdown()
-
-def set_logger(log_instance):
-    """Set the logger for this module"""
-    global logger
-    logger = log_instance 
+            scheduler.shutdown() 

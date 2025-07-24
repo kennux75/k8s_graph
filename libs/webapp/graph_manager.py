@@ -8,7 +8,7 @@ Handles building, updating, and managing the graph data
 
 import threading
 import networkx as nx
-import logging
+from libs.common.logging_utils import get_logger
 from flask_socketio import SocketIO
 from config.app_config import UPDATE_INTERVAL, APP_CONFIG
 from libs.graph.communication_graph import K8sCommunicationGraph
@@ -16,7 +16,7 @@ from libs.visualization.tooltip_manager import generate_node_tooltip, generate_e
 from libs.webapp.app_utils import convert_dict_for_json
 
 # Initialize logger
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 # Global variables to store graph data
 graph_data = {

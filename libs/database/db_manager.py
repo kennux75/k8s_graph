@@ -7,19 +7,13 @@ Database manager for storing node errors in MariaDB
 
 import mysql.connector
 from mysql.connector import Error
-import logging
 import json
 import time
 from config.database import DB_CONFIG, NODE_ERRORS_TABLE, ERROR_REQUEST_SCHEMA, NODE_COMMUNICATIONS_TABLE
+from libs.common.logging_utils import get_logger
 
-# Initialize logger with a default configuration
-logger = logging.getLogger(__name__)
-if not logger.handlers:
-    handler = logging.StreamHandler()
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
-    logger.setLevel(logging.INFO)
+# Logger
+logger = get_logger(__name__)
 
 class DatabaseManager:
     def __init__(self):

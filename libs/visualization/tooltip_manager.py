@@ -5,11 +5,11 @@ This module centralizes the tooltip generation for nodes and edges in the K8s co
 It provides consistent formatting and handles various data sources for tooltip content.
 """
 
-import logging
+from libs.common.logging_utils import get_logger
 from libs.database.db_manager import DatabaseManager
 
-# Initialize logger
-logger = logging.getLogger(__name__)
+# Logger
+logger = get_logger(__name__)
 
 # Initialize database manager
 db_manager = None

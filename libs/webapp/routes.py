@@ -13,9 +13,10 @@ from config.config_utils import get_frontend_config, get_js_config
 from config.app_config import UPDATE_INTERVAL
 from libs.webapp.graph_manager import build_graph_data, get_graph_data, generate_test_graph
 from libs.graph.communication_graph import K8sCommunicationGraph
+from libs.common.logging_utils import get_logger
 
 # Initialize logger
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 # Flask app instance
 app = None

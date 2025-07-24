@@ -17,13 +17,9 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '.'))
 
 # Import our modules
 from libs.logging import setup_logging
-from libs.graph.communication_graph import set_logger as set_graph_logger
-from libs.parsing.kubernetes import set_logger as set_kubernetes_logger
-from libs.parsing.logs import set_logger as set_logs_logger
-from libs.graph.graph_builder import set_logger as set_graph_builder_logger
-from libs.visualization.tooltip_manager import set_logger as set_tooltip_logger, set_database_manager
+from libs.visualization.tooltip_manager import set_database_manager
 from libs.webapp.app_controller import create_app, init_app, run_app
-from libs.database.db_manager import DatabaseManager, set_logger as set_db_logger
+from libs.database.db_manager import DatabaseManager
 
 if __name__ == '__main__':
     # Set up argument parser
@@ -39,13 +35,8 @@ if __name__ == '__main__':
 
     logger = setup_logging(log_level)  # Passer le niveau de journalisation
     
-    # Configure loggers for all modules
-    set_graph_logger(logger)
-    set_kubernetes_logger(logger)
-    set_logs_logger(logger)
-    set_graph_builder_logger(logger)
-    set_tooltip_logger(logger)
-    set_db_logger(logger)  # Set logger for database manager
+    # Root logger configured globally by setup_logging;
+    # individual modules obtain their own logger via logging_utils.
     
     # Initialize database manager
     db_manager = DatabaseManager()
